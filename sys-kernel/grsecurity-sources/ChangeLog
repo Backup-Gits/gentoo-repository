@@ -1,0 +1,113 @@
+*grsecurity-sources-4.9.114 (23 Jul 2018)
+
+  24 Jul 2018; Michal Brngal <michal@brngal.sk>
+  +grsecurity-sources-4.9.114.ebuild:
+  sys-kernel/grsecurity-sources: Automated version bump to 4.9.114
+
+
+*grsecurity-sources-4.9.110 (29 Jun 2018)
+
+  29 Jun 2018; Michal Brngal <michal@brngal.sk>
+  +grsecurity-sources-4.9.110.ebuild:
+  sys-kernel/grsecurity-sources: Automated version bump to 4.9.110
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*grsecurity-sources-4.9.44 (21 Aug 2017)
+
+  21 Aug 2017; Agostino Sarubbo <ago@gentoo.org>
+  +grsecurity-sources-4.9.44.ebuild, +metadata.xml:
+  sys-kernel/grsecurity-sources: Initial commit

@@ -1,1 +1,2 @@
-# gentoo-repository
+Description
+	Gentoo repository
