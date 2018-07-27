@@ -1,2 +1,2 @@
 Description
-	Gentoo repository
+	Private Gentoo repository for home use only
