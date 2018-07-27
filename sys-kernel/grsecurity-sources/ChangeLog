@@ -1,4 +1,10 @@
-*grsecurity-sources-4.9.114 (23 Jul 2018)
+*grsecurity-sources-4.9.115 (27 Jul 2018)
+
+  27 Jul 2018; Michal Brngal <michal@brngal.sk>
+  +grsecurity-sources-4.9.115.ebuild:
+  sys-kernel/grsecurity-sources: Automated version bump to 4.9.115
+
+#grsecurity-sources-4.9.114 (23 Jul 2018)
 
   24 Jul 2018; Michal Brngal <michal@brngal.sk>
   +grsecurity-sources-4.9.114.ebuild:
