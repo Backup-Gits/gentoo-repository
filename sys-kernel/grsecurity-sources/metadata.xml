@@ -17,6 +17,7 @@
 	<longdescription>
 		grsecurity-sources is based upon genpatches, and adds the grsecurity unofficial
 		patch from https://github.com/dapperlinux/dapper-secure-kernel-patchset-stable, which also includes PaX.
+		Package/ebuild ported from https://gitweb.gentoo.org/dev/ago.git/
 	</longdescription>
 	<use>
 		<flag name="deblob">Remove binary blobs from kernel sources to provide libre license compliance.</flag>
