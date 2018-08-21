@@ -19,7 +19,8 @@ DESCRIPTION="Unofficial port of the last public grsecurity patch plus Gentoo pat
 HOMEPAGE="https://github.com/dapperlinux/dapper-secure-kernel-patchset-stable"
 IUSE="deblob"
 KEYWORDS="-* ~amd64"
-RDEPEND=">=sys-devel/gcc-7.3"
+RDEPEND=">=sys-devel/gcc-7.3
+		>=virtual/linux-sources-3-r2"
 
 pkg_postinst() {
 	kernel-2_pkg_postinst
