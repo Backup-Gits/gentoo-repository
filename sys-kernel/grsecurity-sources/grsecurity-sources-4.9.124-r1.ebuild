@@ -13,7 +13,7 @@ detect_arch
 GRSECURITY_URI="https://ca95eb596e48788b5275bacf9167e788.zeroone.sk/distfiles/${PN}-extras-${PVR}.tar.bz2"
 SRC_URI="${KERNEL_URI} ${GRSECURITY_URI} ${ARCH_URI}"
 
-UNIPATCH_LIST="${DISTDIR}/${PN}-extras-${PV}.tar.bz2"
+UNIPATCH_LIST="${DISTDIR}/${PN}-extras-${PVR}.tar.bz2"
 
 DESCRIPTION="Unofficial port of the last public grsecurity patch plus Gentoo patchset"
 HOMEPAGE="https://github.com/dapperlinux/dapper-secure-kernel-patchset-stable"
