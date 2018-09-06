@@ -12,7 +12,7 @@ DESCRIPTION="A TCP/HTTP reverse proxy for high availability environments"
 HOMEPAGE="http://www.haproxy.org"
 if [[ ${PV} != *9999 ]]; then
 	SRC_URI="http://haproxy.1wt.eu/download/$(get_version_component_range 1-2)/src/${MY_P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~ppc ~x86"
+	KEYWORDS="amd64 arm ~ppc x86"
 else
 	EGIT_REPO_URI="http://git.haproxy.org/git/haproxy-$(get_version_component_range 1-2).git/"
 	EGIT_BRANCH=master
@@ -74,13 +74,13 @@ pkg_setup() {
 
 src_compile() {
 	local -a args=(
-        SMALL_OPTS=-DBUFSIZE=262144
-        USE_LINUX_SPLICE=1
-        USE_REGPARM=1
-
 		TARGET=linux2628
 		USE_GETADDRINFO=1
 		USE_TFO=1
+		SMALL_OPTS=-DBUFSIZE=262144
+		USE_LINUX_SPLICE=1
+		USE_REGPARM=1
+
 	)
 
 	# TODO: PCRE2_WIDTH?
