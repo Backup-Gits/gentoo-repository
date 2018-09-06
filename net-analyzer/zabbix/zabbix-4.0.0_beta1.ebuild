@@ -15,9 +15,6 @@ SRC_URI="https://prdownloads.sourceforge.net/zabbix/${MY_P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 WEBAPP_MANUAL_SLOT="yes"
-if [[ ${PV} != *9999 ]]; then
-    KEYWORDS="~amd64 ~x86"
-fi
 IUSE="+agent java curl frontend ipv6 xmpp ldap libxml2 mysql openipmi oracle +postgres proxy server ssh ssl snmp sqlite odbc static"
 REQUIRED_USE="|| ( agent frontend proxy server )
 	proxy? ( ^^ ( mysql oracle postgres sqlite odbc ) )
