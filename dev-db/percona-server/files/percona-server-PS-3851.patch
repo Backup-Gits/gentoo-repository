@@ -1,0 +1,128 @@
+From 6d352b8ca83636f33760ee3744786a79ca4e42c6 Mon Sep 17 00:00:00 2001
+From: Satya Bodapati <satya.bodapati@percona.com>
+Date: Wed, 20 Jun 2018 18:40:29 +0530
+Subject: [PATCH] PS-3851: Percona Ver 5.6.39-83.1 Failing assertion:
+ sym_node->table != NULL
+
+Problem:
+--------
+A DDL on table with FTS index with concurrent FTS sync leads to crash.
+When table rebuilding ALTERs happen on table with FTS indexes, a new
+copy of table is created, the rows are inserted. This copy of table
+is created with a temporary name and renamed to the original table
+name at end of ALTER.
+
+FTS sync thread stores the direct reference of intermediate
+table before rename (fts_table_t->parent pointing to dict_table_t->name.m_name)
+and later tries to acccess this intermediate table after rename.
+
+When the table is renamed, the old name is freed and new name is
+allocated. The inter-leaving FTS sync thread still has access to the
+freed location.
+
+As part of fts sync, it writes the tokenized words to FTS AUX tables.
+It is executed as internal SQL and as part of internal SQL, FTS sync
+deferences freed location, builds a wrong AUX INDEX table name.
+
+Hence the table is neither found in cache nor it can load from dictionary.
+The assert says table must have been found.
+
+Fix:
+----
+When renaming a table, wait for a running sync to finish.
+---
+ mysql-test/suite/innodb_fts/r/sync.result | 24 +++++++++++++++++++++
+ mysql-test/suite/innodb_fts/t/sync.test   | 26 +++++++++++++++++++++++
+ storage/innobase/row/row0mysql.cc         | 12 +++++++++++
+ 3 files changed, 62 insertions(+)
+
+diff --git a/mysql-test/suite/innodb_fts/r/sync.result b/mysql-test/suite/innodb_fts/r/sync.result
+index 627d3aa50c0..e6febdb44f4 100644
+--- a/mysql-test/suite/innodb_fts/r/sync.result
++++ b/mysql-test/suite/innodb_fts/r/sync.result
+@@ -130,3 +130,27 @@ id	title
+ 2	database
+ 3	good
+ DROP TABLE t1;
++#
++# PS-3851: Percona Ver 5.6.39-83.1 Failing assertion: sym_node->table != NULL
++#
++CREATE TABLE `questions_and_answers` (
++`id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',
++`keywords` text COMMENT 'CSV list of keywords related to this entry',
++PRIMARY KEY (`id`),
++FULLTEXT KEY `keywords` (`keywords`)
++) ENGINE=InnoDB AUTO_INCREMENT=3620 DEFAULT CHARSET=utf8 COMMENT='Main table for Q&A module ';
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1854,'support, services, essay, writing, maths, help, advice, study, advice, advise, careers, employability, graduating, graduate, student_support, academic_support, academic_help');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1855,'accommodation, housing, halls, residence, live, living, bed, beds, acomodation, accomodation, accommidation, acomidation, hall, campus_living, uni_living, uni_halls, university_life, university_accommodation');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1856,'interview, interviews, audition, auditions, portfolio, review, admission, interview_preparation, booking, book, change_interview');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1857,'entry_requirements, application, admission, apply, applying, entry, criteria, requirements, mature, life, experience, A-level, A-levels, A_levels, AS, AS_Level, AS_Levels, BTEC, IB, baccalaureate, Access, diploma, course, UCAS, foundation, foundation_degree, level_2, l2');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1858,'alumni, alumnus, FOCUS, former, old, students, graduates');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1859,'results_day, sending_results, clearing, confirmation, results, can_I_apply_through_clearing, do_you_have_vacancies, do_you_have_spaces, do_you_have_places, confirming_your_place');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1860,'contact, contacts, recruitment, admissions, funding, finance, registry, support, careers, disabilities, accommodation, enrol, enrolment, sport, recreation, team');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1861,'food, eat, drink, eating, café, cafés, snacks');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1862,'faculty, faculties, schools, department, departments, courses, subject, subjects, structure, London, campus, CULC, subject_areas');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1863,'freshers, week, induction, students, starters, freshers_week, what\'s_on_at_freshers');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1864,'loan, loans, financial, support, funding, scholarships, bursaries, bursary, busrarys');
++SET GLOBAL DEBUG='+d,fts_instrument_sync_request';
++ALTER TABLE `questions_and_answers` ALGORITHM=COPY;
++SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
++DROP TABLE `questions_and_answers`;
+diff --git a/mysql-test/suite/innodb_fts/t/sync.test b/mysql-test/suite/innodb_fts/t/sync.test
+index 9389fd72765..4e4e2bb97fd 100644
+--- a/mysql-test/suite/innodb_fts/t/sync.test
++++ b/mysql-test/suite/innodb_fts/t/sync.test
+@@ -167,4 +167,30 @@ SELECT * FROM t1 WHERE MATCH(title) AGAINST ('mysql database good');
+ 
+ DROP TABLE t1;
+ 
++--echo #
++--echo # PS-3851: Percona Ver 5.6.39-83.1 Failing assertion: sym_node->table != NULL
++--echo #
++CREATE TABLE `questions_and_answers` (
++  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique ID',
++  `keywords` text COMMENT 'CSV list of keywords related to this entry',
++  PRIMARY KEY (`id`),
++  FULLTEXT KEY `keywords` (`keywords`)
++) ENGINE=InnoDB AUTO_INCREMENT=3620 DEFAULT CHARSET=utf8 COMMENT='Main table for Q&A module ';
++
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1854,'support, services, essay, writing, maths, help, advice, study, advice, advise, careers, employability, graduating, graduate, student_support, academic_support, academic_help');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1855,'accommodation, housing, halls, residence, live, living, bed, beds, acomodation, accomodation, accommidation, acomidation, hall, campus_living, uni_living, uni_halls, university_life, university_accommodation');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1856,'interview, interviews, audition, auditions, portfolio, review, admission, interview_preparation, booking, book, change_interview');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1857,'entry_requirements, application, admission, apply, applying, entry, criteria, requirements, mature, life, experience, A-level, A-levels, A_levels, AS, AS_Level, AS_Levels, BTEC, IB, baccalaureate, Access, diploma, course, UCAS, foundation, foundation_degree, level_2, l2');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1858,'alumni, alumnus, FOCUS, former, old, students, graduates');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1859,'results_day, sending_results, clearing, confirmation, results, can_I_apply_through_clearing, do_you_have_vacancies, do_you_have_spaces, do_you_have_places, confirming_your_place');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1860,'contact, contacts, recruitment, admissions, funding, finance, registry, support, careers, disabilities, accommodation, enrol, enrolment, sport, recreation, team');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1861,'food, eat, drink, eating, café, cafés, snacks');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1862,'faculty, faculties, schools, department, departments, courses, subject, subjects, structure, London, campus, CULC, subject_areas');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1863,'freshers, week, induction, students, starters, freshers_week, what\'s_on_at_freshers');
++INSERT INTO `questions_and_answers` (`id`,`keywords`) VALUES (1864,'loan, loans, financial, support, funding, scholarships, bursaries, bursary, busrarys');
++
++SET GLOBAL DEBUG='+d,fts_instrument_sync_request';
++ALTER TABLE `questions_and_answers` ALGORITHM=COPY;
++SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
++DROP TABLE `questions_and_answers`;
+ --source include/wait_until_count_sessions.inc
+diff --git a/storage/innobase/row/row0mysql.cc b/storage/innobase/row/row0mysql.cc
+index 1ad0b68e0d6..ddde8b8f730 100644
+--- a/storage/innobase/row/row0mysql.cc
++++ b/storage/innobase/row/row0mysql.cc
+@@ -5500,6 +5500,18 @@ row_rename_table_for_mysql(
+ 		goto funct_exit;
+ 	}
+ 
++	/* Wait for background fts sync to finish */
++	for (retry = 1; dict_fts_index_syncing(table); ++retry) {
++		DICT_BG_YIELD(trx);
++		if (retry % 100 == 0) {
++			ib_logf(IB_LOG_LEVEL_INFO,
++				"Unable to rename table %s to new name"
++				" %s because FTS sync is running on table."
++				" Retrying\n",
++				old_name, new_name);
++		}
++	}
++
+ 	/* We use the private SQL parser of Innobase to generate the query
+ 	graphs needed in updating the dictionary data from system tables. */
+ 

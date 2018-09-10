@@ -83,6 +83,8 @@ src_prepare() {
         EPATCH_OPTS="-p1" epatch "${FILESDIR}"/mysql-sphinx.patch
     fi
 	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/percona-server-PS-4519.patch
+	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/percona-server-PS-3702.patch
+	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/percona-server-PS-3851.patch
 
 
 }
