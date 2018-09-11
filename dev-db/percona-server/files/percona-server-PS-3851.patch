@@ -1,46 +1,7 @@
-From 6d352b8ca83636f33760ee3744786a79ca4e42c6 Mon Sep 17 00:00:00 2001
-From: Satya Bodapati <satya.bodapati@percona.com>
-Date: Wed, 20 Jun 2018 18:40:29 +0530
-Subject: [PATCH] PS-3851: Percona Ver 5.6.39-83.1 Failing assertion:
- sym_node->table != NULL
-
-Problem:
---------
-A DDL on table with FTS index with concurrent FTS sync leads to crash.
-When table rebuilding ALTERs happen on table with FTS indexes, a new
-copy of table is created, the rows are inserted. This copy of table
-is created with a temporary name and renamed to the original table
-name at end of ALTER.
-
-FTS sync thread stores the direct reference of intermediate
-table before rename (fts_table_t->parent pointing to dict_table_t->name.m_name)
-and later tries to acccess this intermediate table after rename.
-
-When the table is renamed, the old name is freed and new name is
-allocated. The inter-leaving FTS sync thread still has access to the
-freed location.
-
-As part of fts sync, it writes the tokenized words to FTS AUX tables.
-It is executed as internal SQL and as part of internal SQL, FTS sync
-deferences freed location, builds a wrong AUX INDEX table name.
-
-Hence the table is neither found in cache nor it can load from dictionary.
-The assert says table must have been found.
-
-Fix:
-----
-When renaming a table, wait for a running sync to finish.
----
- mysql-test/suite/innodb_fts/r/sync.result | 24 +++++++++++++++++++++
- mysql-test/suite/innodb_fts/t/sync.test   | 26 +++++++++++++++++++++++
- storage/innobase/row/row0mysql.cc         | 12 +++++++++++
- 3 files changed, 62 insertions(+)
-
-diff --git a/mysql-test/suite/innodb_fts/r/sync.result b/mysql-test/suite/innodb_fts/r/sync.result
-index 627d3aa50c0..e6febdb44f4 100644
---- a/mysql-test/suite/innodb_fts/r/sync.result
-+++ b/mysql-test/suite/innodb_fts/r/sync.result
-@@ -130,3 +130,27 @@ id	title
+diff -Nru mysql.patched/mysql-test/suite/innodb_fts/r/sync.result mysql/mysql-test/suite/innodb_fts/r/sync.result
+--- mysql.patched/mysql-test/suite/innodb_fts/r/sync.result	2018-05-29 23:11:24.000000000 +0200
++++ mysql/mysql-test/suite/innodb_fts/r/sync.result	2018-09-11 09:40:55.561919655 +0200
+@@ -132,3 +132,27 @@
  2	database
  3	good
  DROP TABLE t1;
@@ -68,11 +29,10 @@ index 627d3aa50c0..e6febdb44f4 100644
 +ALTER TABLE `questions_and_answers` ALGORITHM=COPY;
 +SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
 +DROP TABLE `questions_and_answers`;
-diff --git a/mysql-test/suite/innodb_fts/t/sync.test b/mysql-test/suite/innodb_fts/t/sync.test
-index 9389fd72765..4e4e2bb97fd 100644
---- a/mysql-test/suite/innodb_fts/t/sync.test
-+++ b/mysql-test/suite/innodb_fts/t/sync.test
-@@ -167,4 +167,30 @@ SELECT * FROM t1 WHERE MATCH(title) AGAINST ('mysql database good');
+diff -Nru mysql.patched/mysql-test/suite/innodb_fts/t/sync.test mysql/mysql-test/suite/innodb_fts/t/sync.test
+--- mysql.patched/mysql-test/suite/innodb_fts/t/sync.test	2018-05-29 23:11:24.000000000 +0200
++++ mysql/mysql-test/suite/innodb_fts/t/sync.test	2018-09-11 09:40:55.561919655 +0200
+@@ -168,4 +168,30 @@
  
  DROP TABLE t1;
  
@@ -103,11 +63,10 @@ index 9389fd72765..4e4e2bb97fd 100644
 +SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
 +DROP TABLE `questions_and_answers`;
  --source include/wait_until_count_sessions.inc
-diff --git a/storage/innobase/row/row0mysql.cc b/storage/innobase/row/row0mysql.cc
-index 1ad0b68e0d6..ddde8b8f730 100644
---- a/storage/innobase/row/row0mysql.cc
-+++ b/storage/innobase/row/row0mysql.cc
-@@ -5500,6 +5500,18 @@ row_rename_table_for_mysql(
+diff -Nru mysql.patched/storage/innobase/row/row0mysql.cc mysql/storage/innobase/row/row0mysql.cc
+--- mysql.patched/storage/innobase/row/row0mysql.cc	2018-05-29 23:11:24.000000000 +0200
++++ mysql/storage/innobase/row/row0mysql.cc	2018-09-11 09:42:19.985488251 +0200
+@@ -5888,6 +5888,19 @@
  		goto funct_exit;
  	}
  
@@ -115,11 +74,12 @@ index 1ad0b68e0d6..ddde8b8f730 100644
 +	for (retry = 1; dict_fts_index_syncing(table); ++retry) {
 +		DICT_BG_YIELD(trx);
 +		if (retry % 100 == 0) {
-+			ib_logf(IB_LOG_LEVEL_INFO,
-+				"Unable to rename table %s to new name"
-+				" %s because FTS sync is running on table."
-+				" Retrying\n",
-+				old_name, new_name);
++			ib:info() << "Unable to rename table "
++				  << old_name
++				  << " to new name "
++				  << new_name
++				  << " because FTS sync is running on table."
++				  << " Retrying\n",
 +		}
 +	}
 +
