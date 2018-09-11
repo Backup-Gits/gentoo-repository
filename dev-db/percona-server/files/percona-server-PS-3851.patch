@@ -1,6 +1,6 @@
-diff -Nru mysql.patched/mysql-test/suite/innodb_fts/r/sync.result mysql/mysql-test/suite/innodb_fts/r/sync.result
---- mysql.patched/mysql-test/suite/innodb_fts/r/sync.result	2018-05-29 23:11:24.000000000 +0200
-+++ mysql/mysql-test/suite/innodb_fts/r/sync.result	2018-09-11 09:40:55.561919655 +0200
+diff -Nru mysql/mysql-test/suite/innodb_fts/r/sync.result mysql.patched/mysql-test/suite/innodb_fts/r/sync.result
+--- mysql/mysql-test/suite/innodb_fts/r/sync.result	2018-05-29 23:11:24.000000000 +0200
++++ mysql.patched/mysql-test/suite/innodb_fts/r/sync.result	2018-09-11 10:37:35.460690785 +0200
 @@ -132,3 +132,27 @@
  2	database
  3	good
@@ -29,9 +29,9 @@ diff -Nru mysql.patched/mysql-test/suite/innodb_fts/r/sync.result mysql/mysql-te
 +ALTER TABLE `questions_and_answers` ALGORITHM=COPY;
 +SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
 +DROP TABLE `questions_and_answers`;
-diff -Nru mysql.patched/mysql-test/suite/innodb_fts/t/sync.test mysql/mysql-test/suite/innodb_fts/t/sync.test
---- mysql.patched/mysql-test/suite/innodb_fts/t/sync.test	2018-05-29 23:11:24.000000000 +0200
-+++ mysql/mysql-test/suite/innodb_fts/t/sync.test	2018-09-11 09:40:55.561919655 +0200
+diff -Nru mysql/mysql-test/suite/innodb_fts/t/sync.test mysql.patched/mysql-test/suite/innodb_fts/t/sync.test
+--- mysql/mysql-test/suite/innodb_fts/t/sync.test	2018-05-29 23:11:24.000000000 +0200
++++ mysql.patched/mysql-test/suite/innodb_fts/t/sync.test	2018-09-11 10:37:35.464690765 +0200
 @@ -168,4 +168,30 @@
  
  DROP TABLE t1;
@@ -63,10 +63,10 @@ diff -Nru mysql.patched/mysql-test/suite/innodb_fts/t/sync.test mysql/mysql-test
 +SET GLOBAL DEBUG='-d,fts_instrument_sync_request';
 +DROP TABLE `questions_and_answers`;
  --source include/wait_until_count_sessions.inc
-diff -Nru mysql.patched/storage/innobase/row/row0mysql.cc mysql/storage/innobase/row/row0mysql.cc
---- mysql.patched/storage/innobase/row/row0mysql.cc	2018-05-29 23:11:24.000000000 +0200
-+++ mysql/storage/innobase/row/row0mysql.cc	2018-09-11 09:42:19.985488251 +0200
-@@ -5888,6 +5888,19 @@
+diff -Nru mysql/storage/innobase/row/row0mysql.cc mysql.patched/storage/innobase/row/row0mysql.cc
+--- mysql/storage/innobase/row/row0mysql.cc	2018-05-29 23:11:24.000000000 +0200
++++ mysql.patched/storage/innobase/row/row0mysql.cc	2018-09-11 10:38:56.300286826 +0200
+@@ -5888,6 +5888,17 @@
  		goto funct_exit;
  	}
  
@@ -74,12 +74,10 @@ diff -Nru mysql.patched/storage/innobase/row/row0mysql.cc mysql/storage/innobase
 +	for (retry = 1; dict_fts_index_syncing(table); ++retry) {
 +		DICT_BG_YIELD(trx);
 +		if (retry % 100 == 0) {
-+			ib:info() << "Unable to rename table "
-+				  << old_name
-+				  << " to new name "
-+				  << new_name
-+				  << " because FTS sync is running on table."
-+				  << " Retrying\n",
++			ib::info() << "Unable to rename table " << old_name
++				<< " to new name " << new_name
++				<< " because FTS sync is running on table."
++				<< " Retrying";
 +		}
 +	}
 +
