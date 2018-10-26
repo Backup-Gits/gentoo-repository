@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="6"
-MY_EXTRAS_VER="20181016-1606Z"
+MY_EXTRAS_VER="20181017-2201Z"
 
 CMAKE_MAKEFILE_GENERATOR=emake
 
@@ -35,8 +35,8 @@ HOMEPAGE="https://www.percona.com/software/mysql-database/percona-server"
 DESCRIPTION="A fast, multi-threaded, multi-user SQL database server"
 LICENSE="GPL-2"
 SLOT="0/18"
-IUSE="cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
-	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx"
+IUSE="sphinx cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
+	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl"
 
 # Tests always fail when libressl is enabled due to hard-coded ciphers in the tests
 RESTRICT="libressl? ( test )"
@@ -64,7 +64,7 @@ PATCHES=(
 	"${MY_PATCH_DIR}"/20007_all_cmake-debug-werror-5.7.patch
 	"${MY_PATCH_DIR}"/20009_all_mysql_myodbc_symbol_fix-5.7.10.patch
 	"${MY_PATCH_DIR}"/20018_all_percona-server-5.7.23-without-clientlibs-tools.patch
-	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-fix-libressl-support.patch
+	"${MY_PATCH_DIR}"/20018_all_percona-server-5.7.23-fix-libressl-support.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-add-missing-gcc-8-fix.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-fix-grant_user_lock-a-root.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-round-off-test-values-for-same-output-on-all-architectures.patch
@@ -301,6 +301,10 @@ src_unpack() {
 }
 
 src_prepare() {
+	if use sphinx ; then
+	     EPATCH_OPTS="-p1" epatch "${FILESDIR}"/mysql-sphinx.patch
+	fi
+
 	cmake-utils_src_prepare
 
 	if use jemalloc ; then
@@ -346,11 +350,6 @@ src_prepare() {
 	fi
 
 	sed -i 's~ADD_SUBDIRECTORY(storage/ndb)~~' CMakeLists.txt || die
-
-	if use sphinx ; then
-        EPATCH_OPTS="-p1" epatch "${FILESDIR}"/mysql-sphinx.patch
-    fi
-
 }
 
 src_configure(){
