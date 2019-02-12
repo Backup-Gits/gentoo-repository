@@ -1,0 +1,12 @@
+diff -Nru irssi-1.2.0.orig/src/core/wcwidth-wrapper.c irssi-1.2.0/src/core/wcwidth-wrapper.c
+--- irssi-1.2.0.orig/src/core/wcwidth-wrapper.c	2019-02-11 18:27:58.000000000 +0100
++++ irssi-1.2.0/src/core/wcwidth-wrapper.c	2019-02-12 11:51:40.020917571 +0100
+@@ -27,7 +27,7 @@
+ #include "utf8.h"
+ 
+ #ifdef HAVE_LIBUTF8PROC
+-#include <utf8proc.h>
++#include <libutf8proc/utf8proc.h>
+ #endif
+ 
+ /* wcwidth=2 since unicode 5.2.0 */
