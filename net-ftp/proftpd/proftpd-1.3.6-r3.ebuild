@@ -67,6 +67,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.3.6-use-trace.patch
 	"${FILESDIR}"/${PN}-1.3.6-sighup-crash.patch
 	"${FILESDIR}"/${PN}-1.3.6-openssl-1-1.patch
+	"${FILESDIR}"/${PN}-1.3.6-tlsv13.patch
 )
 
 RESTRICT=test # tests corrupt memory. need to be fixed upstream first
