@@ -1,8 +1,8 @@
-# Copyright 1999-2018 Gentoo Authors
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="6"
-MY_EXTRAS_VER="20181017-2201Z"
+MY_EXTRAS_VER="20190524-1046Z"
 
 CMAKE_MAKEFILE_GENERATOR=emake
 
@@ -36,7 +36,8 @@ DESCRIPTION="A fast, multi-threaded, multi-user SQL database server"
 LICENSE="GPL-2"
 SLOT="0/18"
 IUSE="cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
-	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx"
+	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl
+	sphinx"
 
 # Tests always fail when libressl is enabled due to hard-coded ciphers in the tests
 RESTRICT="libressl? ( test )"
@@ -64,7 +65,7 @@ PATCHES=(
 	"${MY_PATCH_DIR}"/20007_all_cmake-debug-werror-5.7.patch
 	"${MY_PATCH_DIR}"/20009_all_mysql_myodbc_symbol_fix-5.7.10.patch
 	"${MY_PATCH_DIR}"/20018_all_percona-server-5.7.23-without-clientlibs-tools.patch
-	"${MY_PATCH_DIR}"/20018_all_percona-server-5.7.23-fix-libressl-support.patch
+	"${MY_PATCH_DIR}"/20018_all_percona-server-5.7.25-fix-libressl-support.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-add-missing-gcc-8-fix.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-fix-grant_user_lock-a-root.patch
 	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-round-off-test-values-for-same-output-on-all-architectures.patch
@@ -329,7 +330,7 @@ src_prepare() {
 	# We keep extra/lz4 directory because we use extra/lz4/xxhash.c via sql/CMakeLists.txt:394
 	rm -rv \
 		"${S}"/extra/protobuf \
-		"${S}"/libevent \
+		"${S}"/extra/libevent \
 		"${S}"/storage/rocksdb/third_party \
 		"${S}"/storage/tokudb/PerconaFT/third_party \
 		"${S}"/zlib \
@@ -346,10 +347,12 @@ src_prepare() {
 	fi
 
 	sed -i 's~ADD_SUBDIRECTORY(storage/ndb)~~' CMakeLists.txt || die
+
 	if use sphinx ; then
 		EPATCH_OPTS="-p1" epatch "${FILESDIR}"/mysql-sphinx.patch
 	fi
 	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/fts-punctation-word.patch
+
 }
 
 src_configure(){
@@ -601,17 +604,16 @@ src_test() {
 	# These are failing in Percona-Server 5.7 for now and are believed to be
 	# false positives or are known to fail:
 	#
-	# encryption.innodb_encryption_tables:              https://jira.percona.com/browse/PS-5036
 	# group_replication.gr_communication_configuration: requires a valid local network address
 	#                                                   which clashes with FEATURES=network-sandbox
-	# main.mysqlshow:                                   https://jira.percona.com/browse/PS-5017
-	# main.percona_bug1289599:                          https://jira.percona.com/browse/PS-2072
+	# innodb.xtradb_compressed_columns_consistency:     long running test which tends to timeout
+	#                                                   on a busy host
 	# keyring_vault.keyring_vault_timeout:              requires network access to vault.public-ci.percona.com
 	#                                                   which clashes with FEATURES=network-sandbox
-	# perfschema.show_sanity:                           https://jira.percona.com/browse/PS-5018
 	# rocksdb.prefix_extractor_override:                https://jira.percona.com/browse/PS-5199
 	# rpl.rpl_innodb_info_tbl_slave_tmp_tbl_mismatch:   https://bugs.mysql.com/bug.php?id=89223
 	# rpl.rpl_multi_source_mts_reset_worker_info:       https://jira.percona.com/browse/PS-3786
+	# tokudb.bugs.5733_tokudb:                          https://jira.percona.com/browse/PS-4274
 	# x.crud_insert_cast:                               https://jira.percona.com/browse/PS-5032
 	# x.insert_table_bad_column:                        https://jira.percona.com/browse/PS-5032
 	# x.insert_table_bad_numcolumns:                    https://jira.percona.com/browse/PS-5032
@@ -619,19 +621,19 @@ src_test() {
 	# x.insert_table:                                   https://jira.percona.com/browse/PS-5032
 	# x.update_crud_arrayappend_o:                      https://jira.percona.com/browse/PS-5032
 	# x.update_crud_arrayinsert_o:                      https://jira.percona.com/browse/PS-5032
+	# x.mysqlxtest_help:                                https://jira.percona.com/browse/PS-5019
+	# x.admin_kill_client_mysqlx:                       https://jira.percona.com/browse/PS-5019
 	#
 	local t
 
 	for t in \
-		encryption.innodb_encryption_tables \
 		group_replication.gr_communication_configuration \
-		main.mysqlshow \
-		main.percona_bug1289599 \
+		innodb.xtradb_compressed_columns_consistency \
 		keyring_vault.keyring_vault_timeout \
-		perfschema.show_sanity \
 		rocksdb.prefix_extractor_override \
 		rpl.rpl_innodb_info_tbl_slave_tmp_tbl_mismatch \
 		rpl.rpl_multi_source_mts_reset_worker_info \
+		tokudb.bugs.5733_tokudb \
 		x.crud_insert_cast \
 		x.insert_table_bad_column \
 		x.insert_table_bad_numcolumns \
@@ -639,9 +641,43 @@ src_test() {
 		x.insert_table \
 		x.update_crud_arrayappend_o \
 		x.update_crud_arrayinsert_o \
+		x.mysqlxtest_help \
+		x.admin_kill_client_mysqlx \
 	; do
 			_disable_test "$t" "False positives in Gentoo / Known bug"
 	done
+
+	if has_version ">=dev-libs/openssl-1.1.1" ; then
+		for t in \
+			main.ssl_8k_key \
+			auth_sec.mysql_ssl_connection \
+			main.ssl_verify_identity \
+			main.ssl_crl \
+			main.grant_alter_user_qa \
+			auth_sec.ssl_auto_detect \
+			encryption.innodb_onlinealter_encryption \
+			main.ssl_ca \
+			main.ssl_cipher \
+			main.grant_user_lock_qa \
+			auth_sec.openssl_cert_generation \
+			main.ssl_bug75311 \
+			main.ssl_compress \
+			main.ssl \
+			main.plugin_auth_sha256_tls \
+			main.ssl_ecdh \
+			main.openssl_1 \
+			auth_sec.cert_verify \
+			main.mysql_ssl_default \
+			main.percona_tls \
+			auth_sec.tls \
+			auth_sec.ssl_mode \
+			binlog.binlog_grant_alter_user \
+			x.connection_tls_version \
+			x.connection_openssl \
+		; do
+			_disable_test "$t" "Known >=openssl-1.1.1 failures"
+		done
+	fi
 
 	if use numa && use kernel_linux ; then
 		# bug 584880
@@ -723,7 +759,7 @@ src_test() {
 	fi
 
 	# run mysql-test tests
-	perl mysql-test-run.pl --force --vardir="${T}/var-tests" --reorder --skip-test=tokudb --skip-test-list="${T}/disabled.def"
+	perl mysql-test-run.pl --force --vardir="${T}/var-tests" --reorder --skip-test-list="${T}/disabled.def"
 	retstatus_tests=$?
 
 	popd &>/dev/null || die
