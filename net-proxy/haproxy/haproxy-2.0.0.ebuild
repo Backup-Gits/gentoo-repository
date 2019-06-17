@@ -153,12 +153,12 @@ src_install() {
 	if use examples ; then
 		docinto examples
 		dodoc examples/*.cfg
-		dodoc examples/seamless_reload.txt
+		dodoc doc/seamless_reload.txt
 	fi
 
 	if use vim-syntax ; then
 		insinto /usr/share/vim/vimfiles/syntax
-		doins examples/haproxy.vim
+		doins contrib/syntax-highlight/haproxy.vim
 	fi
 }
 
