@@ -1,0 +1,28 @@
+diff --git a/ext/opcache/ZendAccelerator.c b/ext/opcache/ZendAccelerator.c
+index b57d446..0d28e9d 100644
+--- a/ext/opcache/ZendAccelerator.c
++++ b/ext/opcache/ZendAccelerator.c
+@@ -2214,7 +2214,6 @@ static void accel_activate(void)
+ 					zend_alter_ini_entry_chars(key, "0", 1, ZEND_INI_SYSTEM, ZEND_INI_STAGE_RUNTIME);
+ 					zend_string_release(key);
+ 					zend_accel_error(ACCEL_LOG_WARNING, "Can't cache files in chroot() directory with too big inode");
+-					ZCG(accelerator_enabled) = 0;
+ 					return;
+ 				}
+ 			}
+
+diff --git a/ext/opcache/zend_accelerator_module.c b/ext/opcache/zend_accelerator_module.c
+index 4d4de77..d74b2ac 100644
+--- a/ext/opcache/zend_accelerator_module.c
++++ b/ext/opcache/zend_accelerator_module.c
+@@ -240,6 +240,7 @@ static ZEND_INI_MH(OnEnable)
+ 			return FAILURE;
+ 		} else {
+ 			*p = 0;
++			ZCG(accelerator_enabled) = 0;
+ 			return SUCCESS;
+ 		}
+ 	}
+-- 
+2.1.4
+
