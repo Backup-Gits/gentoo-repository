@@ -4,7 +4,7 @@
 
 EAPI=4
 
-inherit apache-module
+inherit apache-module eutils
 
 MY_PN=modsecurity-apache
 MY_PV=${PV/_rc/-rc}
@@ -39,7 +39,7 @@ RESTRICT=test
 need_apache2
 
 src_prepare() {
-#	epatch "${FILESDIR}/CVE-2013-5705.patch"
+	epatch "${FILESDIR}/CVE-2013-5705.patch"
 	cp "${FILESDIR}"/modsecurity.conf "${T}"/79_modsecurity.conf || die
 }
 
