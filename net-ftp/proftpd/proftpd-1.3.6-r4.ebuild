@@ -72,7 +72,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.3.6-use-trace.patch
 	"${FILESDIR}"/${PN}-1.3.6-sighup-crash.patch
 	"${FILESDIR}"/${PN}-1.3.6-openssl-1-1.patch
-	"${FILESDIR}"/${PN}-1.3.6-tlsv13.patch
+	#"${FILESDIR}"/${PN}-1.3.6-tlsv13.patch
 	"${FILESDIR}"/CVE-2019-12815.patch
 )
 
