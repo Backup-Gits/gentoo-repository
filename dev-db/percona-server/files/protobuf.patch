@@ -1,0 +1,11 @@
+diff -Nru mysql/rapid/plugin/x/ngs/include/ngs_common/protocol_protobuf.h mysql.patch/rapid/plugin/x/ngs/include/ngs_common/protocol_protobuf.h
+--- mysql/rapid/plugin/x/ngs/include/ngs_common/protocol_protobuf.h	2019-05-16 07:06:00.000000000 +0200
++++ mysql.patch/rapid/plugin/x/ngs/include/ngs_common/protocol_protobuf.h	2019-08-19 07:48:41.892565608 +0200
+@@ -29,7 +29,6 @@
+ #include <google/protobuf/io/tokenizer.h>
+ #include <google/protobuf/io/zero_copy_stream.h>
+ #include <google/protobuf/wire_format_lite.h>
+-#include <google/protobuf/wire_format_lite_inl.h>
+ #include <google/protobuf/dynamic_message.h>
+ 
+ #include "mysqlx_connection.pb.h"

@@ -352,6 +352,7 @@ src_prepare() {
 		EPATCH_OPTS="-p1" epatch "${FILESDIR}"/mysql-sphinx.patch
 	fi
 	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/fts-punctation-word.patch
+	EPATCH_OPTS="-p1" epatch "${FILESDIR}"/protobuf.patch
 
 }
 
