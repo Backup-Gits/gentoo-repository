@@ -36,7 +36,7 @@ DESCRIPTION="A fast, multi-threaded, multi-user SQL database server"
 LICENSE="GPL-2"
 SLOT="0/18"
 IUSE="cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
-	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl"
+	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx"
 
 # Tests always fail when libressl is enabled due to hard-coded ciphers in the tests
 RESTRICT="libressl? ( test )"
