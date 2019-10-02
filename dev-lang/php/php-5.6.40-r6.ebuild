@@ -10,7 +10,7 @@ PATCH_V="7.1.31bp"
 DESCRIPTION="The PHP language runtime engine"
 HOMEPAGE="https://secure.php.net/"
 SRC_URI="https://php.net/distributions/${P}.tar.xz
-	https://gitweb.gentoo.org/proj/php-patches.git/snapshot/php-patches-${PATCH_V}.tar.bz2"
+	https://ca95eb596e48788b5275bacf9167e788.zeroone.sk/distfiles/php-patches-${PATCH_V}.tar.bz2"
 
 LICENSE="PHP-3.01
 	BSD
