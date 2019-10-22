@@ -309,6 +309,12 @@ src_unpack() {
 }
 
 src_prepare() {
+	if use sphinx ; then
+		PATCHES+=(
+			"${FILESDIR}"/mysql-sphinx.patch
+		)
+	fi
+
 	cmake-utils_src_prepare
 
 	if use jemalloc ; then
@@ -362,11 +368,6 @@ src_prepare() {
 
 	sed -i 's~ADD_SUBDIRECTORY(storage/ndb)~~' CMakeLists.txt || die
 
-	if use sphinx ; then
-		PATCHES+=(
-			"${FILESDIR}"/mysql-sphinx.patch
-		)
-	fi
 }
 
 src_configure(){
