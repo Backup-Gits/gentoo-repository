@@ -1,0 +1,452 @@
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/Makefile.am dovecot/src/plugins/push-notification/Makefile.am
+--- dovecot-2.3.9/src/plugins/push-notification/Makefile.am	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/Makefile.am	2019-12-10 19:20:22.410313808 +0100
+@@ -36,7 +36,6 @@
+ 	push-notification-event-messagenew.c \
+ 	push-notification-event-messageread.c \
+ 	push-notification-event-messagetrash.c \
+-	push-notification-event-message-common.c \
+ 	push-notification-events.c \
+ 	push-notification-events-rfc5423.c \
+ 	push-notification-plugin.c \
+@@ -53,7 +52,6 @@
+ 	push-notification-event-mailboxrename.h \
+ 	push-notification-event-mailboxsubscribe.h \
+ 	push-notification-event-mailboxunsubscribe.h \
+-	push-notification-event-message-common.h \
+ 	push-notification-event-messageappend.h \
+ 	push-notification-event-messageexpunge.h \
+ 	push-notification-event-messagenew.h \
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/Makefile.in dovecot/src/plugins/push-notification/Makefile.in
+--- dovecot-2.3.9/src/plugins/push-notification/Makefile.in	2019-12-04 10:31:40.000000000 +0100
++++ dovecot/src/plugins/push-notification/Makefile.in	2019-12-10 19:20:35.870258233 +0100
+@@ -198,7 +198,6 @@
+ 	push-notification-event-messagenew.lo \
+ 	push-notification-event-messageread.lo \
+ 	push-notification-event-messagetrash.lo \
+-	push-notification-event-message-common.lo \
+ 	push-notification-events.lo \
+ 	push-notification-events-rfc5423.lo \
+ 	push-notification-plugin.lo push-notification-triggers.lo \
+@@ -532,7 +531,6 @@
+ 	push-notification-event-messagenew.c \
+ 	push-notification-event-messageread.c \
+ 	push-notification-event-messagetrash.c \
+-	push-notification-event-message-common.c \
+ 	push-notification-events.c \
+ 	push-notification-events-rfc5423.c \
+ 	push-notification-plugin.c \
+@@ -549,7 +547,6 @@
+ 	push-notification-event-mailboxrename.h \
+ 	push-notification-event-mailboxsubscribe.h \
+ 	push-notification-event-mailboxunsubscribe.h \
+-	push-notification-event-message-common.h \
+ 	push-notification-event-messageappend.h \
+ 	push-notification-event-messageexpunge.h \
+ 	push-notification-event-messagenew.h \
+@@ -666,7 +663,6 @@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-mailboxrename.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-mailboxsubscribe.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-mailboxunsubscribe.Plo@am__quote@
+-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-message-common.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-messageappend.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-messageexpunge.Plo@am__quote@
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/push-notification-event-messagenew.Plo@am__quote@
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-driver-lua.c dovecot/src/plugins/push-notification/push-notification-driver-lua.c
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-driver-lua.c	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-driver-lua.c	2019-12-10 17:59:07.746410600 +0100
+@@ -340,24 +340,6 @@
+ }
+ 
+ static void
+-push_notification_lua_push_message_ext(const struct push_notification_message_ext *ext,
+-				       struct dlua_script *script)
+-{
+-	lua_pushstring(script->L, ext->from_address);
+-	lua_setfield(script->L, -2, "from_address");
+-	lua_pushstring(script->L, ext->from_display_name_utf8);
+-	lua_setfield(script->L, -2, "from_display_name");
+-
+-	lua_pushstring(script->L, ext->to_address);
+-	lua_setfield(script->L, -2, "to_address");
+-	lua_pushstring(script->L, ext->to_display_name_utf8);
+-	lua_setfield(script->L, -2, "to_display_name");
+-
+-	lua_pushstring(script->L, ext->subject_utf8);
+-	lua_setfield(script->L, -2, "subject");
+-}
+-
+-static void
+ push_notification_lua_push_messageappend(const struct push_notification_txn_event *event,
+ 					 struct dlua_script *script)
+ {
+@@ -375,6 +357,9 @@
+ 	lua_pushstring(script->L, data->to);
+ 	lua_setfield(script->L, -2, "to");
+ 
++	lua_pushstring(script->L, data->subject);
++	lua_setfield(script->L, -2, "subject");
++
+ 	lua_pushstring(script->L, data->snippet);
+ 	lua_setfield(script->L, -2, "snippet");
+ 
+@@ -386,8 +371,6 @@
+ 
+ 	lua_pushstring(script->L, data->message_id);
+ 	lua_setfield(script->L, -2, "message_id");
+-
+-	push_notification_lua_push_message_ext(&data->ext, script);
+ }
+ 
+ static void
+@@ -408,6 +391,9 @@
+ 	lua_pushstring(script->L, data->to);
+ 	lua_setfield(script->L, -2, "to");
+ 
++	lua_pushstring(script->L, data->subject);
++	lua_setfield(script->L, -2, "subject");
++
+ 	lua_pushstring(script->L, data->snippet);
+ 	lua_setfield(script->L, -2, "snippet");
+ 
+@@ -419,8 +405,6 @@
+ 
+ 	lua_pushstring(script->L, data->message_id);
+ 	lua_setfield(script->L, -2, "message_id");
+-
+-	push_notification_lua_push_message_ext(&data->ext, script);
+ }
+ 
+ /* events that need special treatment */
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messageappend.c dovecot/src/plugins/push-notification/push-notification-event-messageappend.c
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messageappend.c	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-messageappend.c	2019-12-10 17:59:52.486226475 +0100
+@@ -66,6 +66,9 @@
+     struct push_notification_event_messageappend_config *config =
+         (struct push_notification_event_messageappend_config *)ec->config;
+     struct push_notification_event_messageappend_data *data;
++    const char *value;
++    time_t date;
++    int tz;
+ 
+     if (config->flags == 0) {
+         return;
+@@ -79,13 +82,63 @@
+         push_notification_txn_msg_set_eventdata(ptxn, msg, ec, data);
+     }
+ 
+-    push_notification_message_fill(mail, ptxn->pool, config->flags,
+-				   &data->from, &data->to, &data->subject,
+-				   &data->date, &data->date_tz,
+-				   &data->message_id,
+-				   &data->flags, &data->flags_set,
+-				   &data->keywords,
+-				   &data->snippet, &data->ext);
++    if ((data->to == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_TO) != 0 &&
++        (mail_get_first_header(mail, "To", &value) >= 0)) {
++        data->to = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->from == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_FROM) != 0 &&
++        (mail_get_first_header(mail, "From", &value) >= 0)) {
++        data->from = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->subject == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_SUBJECT) != 0 &&
++        (mail_get_first_header(mail, "Subject", &value) >= 0)) {
++        data->subject = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->snippet == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_BODY_SNIPPET) != 0 &&
++        (mail_get_special(mail, MAIL_FETCH_BODY_SNIPPET, &value) >= 0)) {
++        /* [0] contains the snippet algorithm, skip over it */
++        i_assert(value[0] != '\0');
++        data->snippet = p_strdup(ptxn->pool, value + 1);
++    }
++
++    if ((data->date == -1) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_DATE) != 0 &&
++        (mail_get_date(mail, &date, &tz) >= 0)) {
++        data->date = date;
++        data->date_tz = tz;
++    }
++
++    if (!data->flags_set &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_FLAGS) != 0) {
++        data->flags = mail_get_flags(mail);
++        data->flags_set = TRUE;
++    }
++
++    if ((data->keywords == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_KEYWORDS) != 0) {
++        const char *const *mail_kws = mail_get_keywords(mail);
++        ARRAY_TYPE(const_string) kws;
++        p_array_init(&kws, ptxn->pool, 2);
++        for (;*mail_kws != NULL; mail_kws++) {
++           value = p_strdup(ptxn->pool, *mail_kws);
++           array_append(&kws, &value, 1);
++        }
++        array_append_zero(&kws);
++        data->keywords = array_idx(&kws, 0);
++    }
++
++    if ((data->message_id == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID) != 0 &&
++        (mail_get_first_header(mail, "Message-ID", &value) >= 0)) {
++        data->message_id = p_strdup(ptxn->pool, value);
++    }
+ }
+ 
+ 
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messageappend.h dovecot/src/plugins/push-notification/push-notification-event-messageappend.h
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messageappend.h	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-messageappend.h	2019-12-10 17:59:32.126310265 +0100
+@@ -23,8 +23,6 @@
+     const char *const *keywords;
+     /* PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID */
+     const char *message_id;
+-
+-    struct push_notification_message_ext ext;
+ };
+ 
+ 
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-message-common.c dovecot/src/plugins/push-notification/push-notification-event-message-common.c
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-message-common.c	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-message-common.c	1970-01-01 01:00:00.000000000 +0100
+@@ -1,110 +0,0 @@
+-/* Copyright (c) 2015-2019 Dovecot authors, see the included COPYING file */
+-
+-#include "lib.h"
+-#include "str.h"
+-#include "message-address.h"
+-#include "message-header-decode.h"
+-#include "mail-storage.h"
+-#include "push-notification-event-message-common.h"
+-
+-static void decode_address_header(pool_t pool, const char *hdr,
+-				  const char **address_r, const char **name_r)
+-{
+-	struct message_address *addr;
+-
+-	if (hdr == NULL)
+-		return;
+-
+-	addr = message_address_parse(pool_datastack_create(),
+-		(const unsigned char *)hdr, strlen(hdr), 1, 0);
+-	if (addr->domain[0] != '\0')
+-		*address_r = p_strdup_printf(pool, "%s@%s", addr->mailbox,
+-					     addr->domain);
+-	else if (addr->mailbox[0] != '\0')
+-		*address_r = p_strdup(pool, addr->mailbox);
+-
+-	if (addr->name != NULL) {
+-		string_t *name_utf8 = t_str_new(128);
+-
+-		message_header_decode_utf8((const unsigned char *)addr->name,
+-					   strlen(addr->name), name_utf8, NULL);
+-		*name_r = p_strdup(pool, str_c(name_utf8));
+-	}
+-}
+-
+-void push_notification_message_fill(struct mail *mail, pool_t pool,
+-				    enum push_notification_event_message_flags event_flags,
+-				    const char **from, const char **to,
+-				    const char **subject,
+-				    time_t *date, int *date_tz,
+-				    const char **message_id,
+-				    enum mail_flags *flags, bool *flags_set,
+-				    const char *const **keywords,
+-				    const char **snippet,
+-				    struct push_notification_message_ext *ext)
+-{
+-	const char *value;
+-	time_t tmp_date;
+-	int tmp_tz;
+-
+-	if ((*from == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_HDR_FROM) != 0 &&
+-	    (mail_get_first_header(mail, "From", &value) >= 0)) {
+-		*from = p_strdup(pool, value);
+-		decode_address_header(pool, value, &ext->from_address,
+-				      &ext->from_display_name_utf8);
+-	}
+-
+-	if ((*to == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_HDR_TO) != 0 &&
+-	    (mail_get_first_header(mail, "To", &value) >= 0)) {
+-		*to = p_strdup(pool, value);
+-		decode_address_header(pool, value, &ext->to_address,
+-				      &ext->to_display_name_utf8);
+-	}
+-
+-	if ((*subject == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_HDR_SUBJECT) != 0 &&
+-	    (mail_get_first_header(mail, "Subject", &value) >= 0)) {
+-		string_t *subject_utf8 = t_str_new(128);
+-
+-		*subject = p_strdup(pool, value);
+-		if (value != NULL) {
+-			message_header_decode_utf8((const unsigned char *)value,
+-						   strlen(value), subject_utf8, NULL);
+-			ext->subject_utf8 = p_strdup(pool, str_c(subject_utf8));
+-		}
+-	}
+-
+-	if ((*date == -1) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_HDR_DATE) != 0 &&
+-	    (mail_get_date(mail, &tmp_date, &tmp_tz) >= 0)) {
+-		*date = tmp_date;
+-		*date_tz = tmp_tz;
+-	}
+-
+-	if ((*message_id == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID) != 0 &&
+-	    (mail_get_first_header(mail, "Message-ID", &value) >= 0)) {
+-		*message_id = p_strdup(pool, value);
+-	}
+-
+-	if (!*flags_set &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_FLAGS) != 0) {
+-		*flags = mail_get_flags(mail);
+-		*flags_set = TRUE;
+-	}
+-
+-	if ((*keywords == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_KEYWORDS) != 0) {
+-		*keywords = p_strarray_dup(pool, mail_get_keywords(mail));
+-	}
+-
+-	if ((*snippet == NULL) &&
+-	    (event_flags & PUSH_NOTIFICATION_MESSAGE_BODY_SNIPPET) != 0 &&
+-	    (mail_get_special(mail, MAIL_FETCH_BODY_SNIPPET, &value) >= 0)) {
+-		/* [0] contains the snippet algorithm, skip over it */
+-		i_assert(value[0] != '\0');
+-		*snippet = p_strdup(pool, value + 1);
+-	}
+-}
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-message-common.h dovecot/src/plugins/push-notification/push-notification-event-message-common.h
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-message-common.h	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-message-common.h	2019-12-10 17:59:52.486226475 +0100
+@@ -23,22 +23,6 @@
+     PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID = 0x80,
+ };
+ 
+-struct push_notification_message_ext {
+-	const char *from_address, *from_display_name_utf8;
+-	const char *to_address, *to_display_name_utf8;
+-	const char *subject_utf8;
+-};
+-
+-void push_notification_message_fill(struct mail *mail, pool_t pool,
+-				    enum push_notification_event_message_flags event_flags,
+-				    const char **from, const char **to,
+-				    const char **subject,
+-				    time_t *date, int *date_tz,
+-				    const char **message_id,
+-				    enum mail_flags *flags, bool *flags_set,
+-				    const char *const **keywords,
+-				    const char **snippet,
+-				    struct push_notification_message_ext *ext);
+ 
+ #endif	/* PUSH_NOTIFICATION_EVENT_MESSAGE_COMMON_H */
+ 
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messagenew.c dovecot/src/plugins/push-notification/push-notification-event-messagenew.c
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messagenew.c	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-messagenew.c	2019-12-10 17:59:52.490226458 +0100
+@@ -66,6 +66,9 @@
+     struct push_notification_event_messagenew_config *config =
+         (struct push_notification_event_messagenew_config *)ec->config;
+     struct push_notification_event_messagenew_data *data;
++    time_t date;
++    int tz;
++    const char *value;
+ 
+     if (config->flags == 0) {
+         return;
+@@ -80,13 +83,63 @@
+         push_notification_txn_msg_set_eventdata(ptxn, msg, ec, data);
+     }
+ 
+-    push_notification_message_fill(mail, ptxn->pool, config->flags,
+-				   &data->from, &data->to, &data->subject,
+-				   &data->date, &data->date_tz,
+-				   &data->message_id,
+-				   &data->flags, &data->flags_set,
+-				   &data->keywords,
+-				   &data->snippet, &data->ext);
++    if ((data->to == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_TO) != 0 &&
++        (mail_get_first_header(mail, "To", &value) >= 0)) {
++        data->to = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->from == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_FROM) != 0 &&
++        (mail_get_first_header(mail, "From", &value) >= 0)) {
++        data->from = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->subject == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_SUBJECT) != 0 &&
++        (mail_get_first_header(mail, "Subject", &value) >= 0)) {
++        data->subject = p_strdup(ptxn->pool, value);
++    }
++
++    if ((data->date == -1) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_DATE) != 0 &&
++        (mail_get_date(mail, &date, &tz) >= 0)) {
++        data->date = date;
++        data->date_tz = tz;
++    }
++
++    if ((data->snippet == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_BODY_SNIPPET) != 0 &&
++        (mail_get_special(mail, MAIL_FETCH_BODY_SNIPPET, &value) >= 0)) {
++        /* [0] contains the snippet algorithm, skip over it */
++        i_assert(value[0] != '\0');
++        data->snippet = p_strdup(ptxn->pool, value + 1);
++    }
++
++    if (!data->flags_set &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_FLAGS) != 0) {
++        data->flags = mail_get_flags(mail);
++        data->flags_set = TRUE;
++    }
++
++    if ((data->keywords == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_KEYWORDS) != 0) {
++        const char *const *mail_kws = mail_get_keywords(mail);
++        ARRAY_TYPE(const_string) kws;
++        p_array_init(&kws, ptxn->pool, 2);
++        for (;*mail_kws != NULL; mail_kws++) {
++           value = p_strdup(ptxn->pool, *mail_kws);
++           array_append(&kws, &value, 1);
++        }
++        array_append_zero(&kws);
++        data->keywords = array_idx(&kws, 0);
++    }
++
++    if ((data->message_id == NULL) &&
++        (config->flags & PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID) != 0 &&
++        (mail_get_first_header(mail, "Message-ID", &value) >= 0)) {
++        data->message_id = p_strdup(ptxn->pool, value);
++    }
+ }
+ 
+ 
+diff -Nru dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messagenew.h dovecot/src/plugins/push-notification/push-notification-event-messagenew.h
+--- dovecot-2.3.9/src/plugins/push-notification/push-notification-event-messagenew.h	2019-12-04 10:31:27.000000000 +0100
++++ dovecot/src/plugins/push-notification/push-notification-event-messagenew.h	2019-12-10 17:59:32.130310248 +0100
+@@ -30,8 +30,6 @@
+     const char *const *keywords;
+     /* PUSH_NOTIFICATION_MESSAGE_HDR_MESSAGE_ID */
+     const char *message_id;
+-
+-    struct push_notification_message_ext ext;
+ };
+ 
+ 
