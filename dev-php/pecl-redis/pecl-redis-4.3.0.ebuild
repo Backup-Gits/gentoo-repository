@@ -4,7 +4,7 @@
 EAPI=6
 
 PHP_EXT_NAME="redis"
-USE_PHP="php5-6 php7-1 php7-2 php7-3"
+USE_PHP="php5-6 php7-1 php7-2 php7-3 php7-4"
 DOCS=( arrays.markdown cluster.markdown README.markdown CREDITS )
 MY_P="${PN/pecl-/}-${PV/_rc/RC}"
 PHP_EXT_PECL_FILENAME="${MY_P}.tgz"
@@ -23,6 +23,7 @@ DEPEND="
 	php_targets_php7-1? ( dev-lang/php:7.1[session?] igbinary? ( dev-php/igbinary[php_targets_php7-1] ) )
 	php_targets_php7-2? ( dev-lang/php:7.2[session?] igbinary? ( dev-php/igbinary[php_targets_php7-2] ) )
 	php_targets_php7-3? ( dev-lang/php:7.3[session?] igbinary? ( dev-php/igbinary[php_targets_php7-3] ) )
+	php_targets_php7-4? ( dev-lang/php:7.4[session?] igbinary? ( dev-php/igbinary[php_targets_php7-4] ) )
 "
 RDEPEND="${DEPEND} !dev-php/pecl-redis:7"
 
