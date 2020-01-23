@@ -1,0 +1,24 @@
+diff -Nru mysql/storage/innobase/include/fts0tokenize.h mysql.patched/storage/innobase/include/fts0tokenize.h
+--- mysql/storage/innobase/include/fts0tokenize.h	2018-12-18 16:24:44.000000000 +0100
++++ mysql.patched/storage/innobase/include/fts0tokenize.h	2019-01-08 14:32:03.868789508 +0100
+@@ -32,7 +32,7 @@
+ inline bool true_word_char(char c, bool extra_word_chars, char ch)
+ {
+ 	bool result = ((extra_word_chars) ? !((c) & (_MY_SPC)) :
+-		       ((c) & (_MY_U | _MY_L | _MY_NMR) || (ch) == '_'));
++		       ((c) & (_MY_U | _MY_L | _MY_NMR) || (ch) == '_' || (ch) == '.' || (ch) == ','));
+ 	return result;
+ }
+ 
+diff -Nru mysql/storage/myisam/ftdefs.h mysql.patched/storage/myisam/ftdefs.h
+--- mysql/storage/myisam/ftdefs.h	2018-12-18 16:24:44.000000000 +0100
++++ mysql.patched/storage/myisam/ftdefs.h	2019-01-09 10:22:08.521660656 +0100
+@@ -25,7 +25,7 @@
+ 
+ #define true_word_char(ctype, character) \
+                       ((ctype) & (_MY_U | _MY_L | _MY_NMR) || \
+-                       (character) == '_')
++                       (character) == '_' || (character) == '.' || (character) == ',')
+ #define misc_word_char(X)	0
+ 
+ #define FT_MAX_WORD_LEN_FOR_SORT 31

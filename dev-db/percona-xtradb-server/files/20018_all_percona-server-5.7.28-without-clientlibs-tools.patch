@@ -1,0 +1,198 @@
+diff -Nru mysql/CMakeLists.txt mysql.work/CMakeLists.txt
+--- mysql/CMakeLists.txt	2020-01-07 10:36:36.696441614 +0100
++++ mysql.work/CMakeLists.txt	2020-01-07 10:48:16.941558218 +0100
+@@ -578,8 +578,6 @@
+ ENDIF()
+ # Add openssl.
+ MYSQL_CHECK_SSL()
+-# Add system/bundled editline.
+-MYSQL_CHECK_EDITLINE()
+ # Add libevent
+ MYSQL_CHECK_LIBEVENT()
+ # Add lz4 library
+@@ -670,7 +668,9 @@
+  ENABLE_TESTING()
+ ENDIF()
+ 
+-ADD_SUBDIRECTORY(include)
++IF(NOT WITHOUT_CLIENTLIBS)
++  ADD_SUBDIRECTORY(include)
++ENDIF(NOT WITHOUT_CLIENTLIBS)
+ ADD_SUBDIRECTORY(dbug)
+ ADD_SUBDIRECTORY(strings)
+ ADD_SUBDIRECTORY(vio)
+@@ -717,7 +717,6 @@
+ ENDIF()
+ 
+ ADD_SUBDIRECTORY(extra)
+-ADD_SUBDIRECTORY(client)
+ ADD_SUBDIRECTORY(sql/share)
+ ADD_SUBDIRECTORY(libservices)
+ 
+@@ -725,11 +724,20 @@
+   ADD_SUBDIRECTORY(man)
+ ENDIF()
+ 
++IF(NOT WITHOUT_TOOLS)
++  # Add system/bundled editline
++  MYSQL_CHECK_EDITLINE()
++  ADD_SUBDIRECTORY(client)
++ENDIF(NOT WITHOUT_TOOLS)
++
+ IF(NOT WITHOUT_SERVER)
+   ADD_SUBDIRECTORY(testclients)
+   ADD_SUBDIRECTORY(sql)
+   OPTION (WITH_EMBEDDED_SERVER "Compile MySQL with embedded server" OFF)
+-  IF(WITH_EMBEDDED_SERVER) 
++  IF(WITH_EMBEDDED_SERVER)
++   IF(WITHOUT_TOOLS)
++     MYSQL_CHECK_EDITLINE()
++   ENDIF(WITHOUT_TOOLS)
+    ADD_SUBDIRECTORY(libmysqld)
+    ADD_SUBDIRECTORY(libmysqld/examples)
+   ENDIF(WITH_EMBEDDED_SERVER)
+diff -Nru mysql/extra/CMakeLists.txt mysql.work/extra/CMakeLists.txt
+--- mysql/extra/CMakeLists.txt	2020-01-07 10:36:35.152447966 +0100
++++ mysql.work/extra/CMakeLists.txt	2020-01-07 10:48:16.941558218 +0100
+@@ -71,11 +71,16 @@
+ # Set InnoDB mutex type
+ ADD_DEFINITIONS(-DMUTEX_EVENT)
+ 
+-MYSQL_ADD_EXECUTABLE(my_print_defaults my_print_defaults.c)
++IF(NOT WITHOUT_CLIENTLIBS)
++  MYSQL_ADD_EXECUTABLE(my_print_defaults my_print_defaults.c)
++  MYSQL_ADD_EXECUTABLE(perror perror.c)
++ELSE(NOT WITHOUT_CLIENTLIBS)
++  ADD_EXECUTABLE(my_print_defaults my_print_defaults.c)
++  ADD_EXECUTABLE(perror perror.c)
++ENDIF(NOT WITHOUT_CLIENTLIBS)
+ TARGET_LINK_LIBRARIES(my_print_defaults mysys mysys_ssl)
+ SET_TARGET_PROPERTIES(my_print_defaults PROPERTIES LINKER_LANGUAGE CXX)
+ 
+-MYSQL_ADD_EXECUTABLE(perror perror.c)
+ ADD_DEPENDENCIES(perror GenError)
+ TARGET_LINK_LIBRARIES(perror mysys mysys_ssl)
+ SET_TARGET_PROPERTIES(perror PROPERTIES LINKER_LANGUAGE CXX)
+@@ -94,10 +99,15 @@
+ MYSQL_ADD_EXECUTABLE(replace replace.c)
+ TARGET_LINK_LIBRARIES(replace mysys)
+ 
+-MYSQL_ADD_EXECUTABLE(lz4_decompress lz4_decompress.cc)
+-TARGET_LINK_LIBRARIES(lz4_decompress ${LZ4_LIBRARY})
++IF(NOT WITHOUT_CLIENTLIBS)
++  MYSQL_ADD_EXECUTABLE(lz4_decompress lz4_decompress.cc)
++  MYSQL_ADD_EXECUTABLE(zlib_decompress zlib_decompress.cc)
++ELSE(NOT WITHOUT_CLIENTLIBS)
++  ADD_EXECUTABLE(lz4_decompress lz4_decompress.cc)
++  ADD_EXECUTABLE(zlib_decompress zlib_decompress.cc)
++ENDIF(NOT WITHOUT_CLIENTLIBS)
+ 
+-MYSQL_ADD_EXECUTABLE(zlib_decompress zlib_decompress.cc)
++TARGET_LINK_LIBRARIES(lz4_decompress ${LZ4_LIBRARY})
+ TARGET_LINK_LIBRARIES(zlib_decompress ${ZLIB_LIBRARY})
+ 
+ IF(WITH_INNOBASE_STORAGE_ENGINE)
+diff -Nru mysql/libmysql/CMakeLists.txt mysql.work/libmysql/CMakeLists.txt
+--- mysql/libmysql/CMakeLists.txt	2020-01-07 10:36:35.304447340 +0100
++++ mysql.work/libmysql/CMakeLists.txt	2020-01-07 10:52:03.912634275 +0100
+@@ -263,13 +263,18 @@
+   LIST(APPEND LIBS_TO_MERGE auth_win_client)
+ ENDIF()
+ 
+-# LDAP authentication SASL client plugin
+-MESSAGE(STATUS "Creating LDAP authentication SASL client library.")
+-ADD_SUBDIRECTORY(authentication_ldap)
+-  
+-# Merge several convenience libraries into one big perconaserverclient
+-MERGE_CONVENIENCE_LIBRARIES(perconaserverclient ${LIBS_TO_MERGE} COMPONENT Development)
+-TARGET_LINK_LIBRARIES(perconaserverclient ${LIBS_TO_LINK})
++IF(WITHOUT_CLIENTLIBS)
++  # Merge several convenience libraries into one big perconaserverclient
++  MERGE_CONVENIENCE_LIBRARIES(perconaserverclient ${LIBS_TO_MERGE} COMPONENT Development SKIP_INSTALL)
++ELSE(WITHOUT_CLIENTLIBS)
++  # LDAP authentication SASL client plugin
++  MESSAGE(STATUS "Creating LDAP authentication SASL client library.")
++  ADD_SUBDIRECTORY(authentication_ldap)
++
++  # Merge several convenience libraries into one big perconaserverclient
++  MERGE_CONVENIENCE_LIBRARIES(perconaserverclient ${LIBS_TO_MERGE} COMPONENT Development)
++  TARGET_LINK_LIBRARIES(perconaserverclient ${LIBS_TO_LINK}) #FIXO, maybe this must be also in IF
++ENDIF(WITHOUT_CLIENTLIBS)
+ 
+ # Visual Studio users need debug  static library for debug projects
+ IF(MSVC)
+@@ -312,10 +317,16 @@
+ IF(NOT DISABLE_SHARED)
+   # Merge several convenience libraries into one big perconaserverclient
+   # and link them together into shared library.
++IF(WITHOUT_CLIENTLIBS)
++  MERGE_LIBRARIES_SHARED(libmysql ${LIBS_TO_MERGE}
++    EXPORTS ${CLIENT_API_FUNCTIONS} ${CLIENT_API_FUNCTIONS_UNDOCUMENTED}
++    COMPONENT SharedLibraries SKIP_INSTALL)
++ELSE(WITHOUT_CLIENTLIBS)
+   MERGE_LIBRARIES_SHARED(libmysql ${LIBS_TO_MERGE}
+     EXPORTS ${CLIENT_API_FUNCTIONS} ${CLIENT_API_FUNCTIONS_UNDOCUMENTED}
+     COMPONENT SharedLibraries)
+   TARGET_LINK_LIBRARIES(libmysql ${LIBS_TO_LINK})
++ENDIF(WITHOUT_CLIENTLIBS)
+   IF(UNIX)
+     # libtool compatability
+     IF(CMAKE_SYSTEM_NAME MATCHES "FreeBSD" OR APPLE)
+diff -Nru mysql/scripts/CMakeLists.txt mysql.work/scripts/CMakeLists.txt
+--- mysql/scripts/CMakeLists.txt	2020-01-07 10:36:35.308447325 +0100
++++ mysql.work/scripts/CMakeLists.txt	2020-01-07 10:48:16.941558218 +0100
+@@ -420,7 +420,6 @@
+ 
+   IF(WITH_SYSTEMD)
+     SET(BIN_SCRIPTS
+-      mysql_config
+       mysqldumpslow
+       ps_tokudb_admin
+       ps_mysqld_helper
+@@ -428,7 +427,6 @@
+       )
+   ELSE()
+     SET(BIN_SCRIPTS
+-      mysql_config
+       mysqldumpslow
+       mysqld_multi
+       mysqld_safe
+@@ -438,6 +436,13 @@
+       )
+   ENDIF()
+ 
++  IF(NOT WITHOUT_CLIENTLIBS)
++    SET(BIN_SCRIPTS
++      ${BIN_SCRIPTS}
++      mysql_config
++    )
++  ENDIF(NOT WITHOUT_CLIENTLIBS)
++
+   SET(PKGCONFIG_FILE ${LIBMYSQL_OS_OUTPUT_NAME}.pc)
+   STRING(REGEX REPLACE "/mysql$" "" PKGCONFIG_DIR "${INSTALL_LIBDIR}")
+   SET(PKGCONFIG_DIR "${PKGCONFIG_DIR}/pkgconfig")
+@@ -452,7 +457,7 @@
+     ${CMAKE_CURRENT_BINARY_DIR}/${PKGCONFIG_FILE}
+     ESCAPE_QUOTES @ONLY)
+ 
+-  IF(INSTALL_PKGCONFIGDIR)
++IF(INSTALL_PKGCONFIGDIR AND NOT WITHOUT_CLIENTLIBS)
+     MESSAGE(STATUS "INSTALL ${PKGCONFIG_FILE} ${INSTALL_PKGCONFIGDIR}")
+     INSTALL(FILES
+       ${CMAKE_CURRENT_BINARY_DIR}/${PKGCONFIG_FILE}
+diff -Nru mysql/support-files/CMakeLists.txt mysql.work/support-files/CMakeLists.txt
+--- mysql/support-files/CMakeLists.txt	2020-01-07 10:36:35.336447210 +0100
++++ mysql.work/support-files/CMakeLists.txt	2020-01-07 10:48:16.945558202 +0100
+@@ -66,9 +66,10 @@
+   IF(INSTALL_SUPPORTFILESDIR)
+     INSTALL(FILES magic DESTINATION ${inst_location} COMPONENT SupportFiles)
+   ENDIF()
+-
++IF(NOT WITHOUT_CLIENTLIBS)
+   INSTALL(FILES mysql.m4 DESTINATION ${INSTALL_SHAREDIR}/aclocal COMPONENT Development)
+-  
++ENDIF(NOT WITHOUT_CLIENTLIBS)
++
+   SET(bindir ${prefix}/${INSTALL_BINDIR})
+   SET(sbindir ${prefix}/${INSTALL_SBINDIR})
+   SET(scriptdir ${prefix}/${INSTALL_SCRIPTDIR})

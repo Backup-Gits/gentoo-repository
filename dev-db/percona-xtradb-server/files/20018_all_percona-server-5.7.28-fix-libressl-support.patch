@@ -1,0 +1,69 @@
+diff -Nru mysql/mysys_ssl/my_crypt.cc mysql.x/mysys_ssl/my_crypt.cc
+--- mysql/mysys_ssl/my_crypt.cc	2019-11-08 15:33:40.000000000 +0100
++++ mysql.x/mysys_ssl/my_crypt.cc	2019-12-09 14:41:46.525645954 +0100
+@@ -26,7 +26,7 @@
+ #include <boost/move/unique_ptr.hpp>
+ #include <boost/core/noncopyable.hpp>
+ 
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+ #define EVP_CIPHER_CTX_buf_noconst(ctx) ((ctx)->buf)
+ #define RAND_OpenSSL() RAND_SSLeay()
+ #endif
+@@ -80,7 +80,8 @@
+ 
+ MyEncryptionCTX::MyEncryptionCTX()
+ {
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
++    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x02090000fL)
+   ctx= new EVP_CIPHER_CTX();
+   EVP_CIPHER_CTX_init(ctx);
+ #else
+diff -Nru mysql/sql/auth/sha2_password_common.cc mysql.x/sql/auth/sha2_password_common.cc
+--- mysql/sql/auth/sha2_password_common.cc	2019-11-08 15:33:40.000000000 +0100
++++ mysql.x/sql/auth/sha2_password_common.cc	2019-12-09 14:42:36.569441401 +0100
+@@ -116,7 +116,8 @@
+     DBUG_RETURN(true);
+   }
+   m_ok= EVP_DigestFinal_ex(md_context, m_digest, NULL);
+-#if defined(HAVE_WOLFSSL) || OPENSSL_VERSION_NUMBER < 0x10100000L
++#if defined(HAVE_WOLFSSL) || OPENSSL_VERSION_NUMBER < 0x10100000L || \
++    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x02070000fL)
+   EVP_MD_CTX_cleanup(md_context);
+ #else  /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+   EVP_MD_CTX_reset(md_context);
+diff -Nru mysql/sql/mysqld.cc mysql.x/sql/mysqld.cc
+--- mysql/sql/mysqld.cc	2019-11-08 15:33:40.000000000 +0100
++++ mysql.x/sql/mysqld.cc	2019-12-09 14:48:40.143955604 +0100
+@@ -3682,6 +3682,7 @@
+ static int init_ssl()
+ {
+ #ifdef HAVE_OPENSSL
++#ifndef LIBRESSL_VERSION_NUMBER
+   int fips_mode= FIPS_mode();
+   if (fips_mode != 0)
+   {
+@@ -3691,7 +3692,9 @@
+         " Disabling FIPS.");
+     FIPS_mode_set(0);
+   }
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L
++#endif
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
++    defined(LIBRESSL_VERSION_NUMBER)
+   CRYPTO_malloc_init();
+ #else /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+   OPENSSL_malloc_init();
+diff -Nru mysql/vio/viosslfactories.c mysql.x/vio/viosslfactories.c
+--- mysql/vio/viosslfactories.c	2019-11-08 15:33:40.000000000 +0100
++++ mysql.x/vio/viosslfactories.c	2019-12-09 14:49:07.471843946 +0100
+@@ -125,7 +125,7 @@
+   {
+     BIGNUM* p= BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
+     BIGNUM* g= BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
+-#if OPENSSL_VERSION_NUMBER < 0x10100000L
++#if OPENSSL_VERSION_NUMBER < 0x10100000L || defined(LIBRESSL_VERSION_NUMBER)
+     dh->p= p;
+     dh->g= g;
+     if (! dh->p || ! dh->g)
