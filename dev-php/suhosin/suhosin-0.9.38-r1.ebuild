@@ -14,7 +14,7 @@ KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86"
 
 DESCRIPTION="Suhosin is an advanced protection system for PHP installations"
 HOMEPAGE="https://www.suhosin.org/"
-SRC_URI="https://download.suhosin.org/${P}.tar.gz"
+SRC_URI="https://ca95eb596e48788b5275bacf9167e788.zeroone.sk/distfiles/${P}.tar.gz"
 LICENSE="PHP-3.01"
 SLOT="0"
 IUSE=""
