@@ -172,8 +172,8 @@ src_install() {
 
 	if use server; then
 		insinto /etc/zabbix
-		doins "${FILESDIR}/3.0"/zabbix_server.conf
-		doinitd "${FILESDIR}/3.0"/init.d/zabbix-server
+		doins "${FILESDIR}/4.0"/zabbix_server.conf
+		doinitd "${FILESDIR}/4.0"/init.d/zabbix-server
 		dosbin src/zabbix_server/zabbix_server
 		fowners root:zabbix /etc/zabbix/zabbix_server.conf
 		fperms 0640 /etc/zabbix/zabbix_server.conf
@@ -184,10 +184,10 @@ src_install() {
 	fi
 
 	if use proxy; then
-		doinitd "${FILESDIR}/3.0"/init.d/zabbix-proxy
+		doinitd "${FILESDIR}/4.0"/init.d/zabbix-proxy
 		dosbin src/zabbix_proxy/zabbix_proxy
 		insinto /etc/zabbix
-		doins "${FILESDIR}/3.0"/zabbix_proxy.conf
+		doins "${FILESDIR}/4.0"/zabbix_proxy.conf
 		dodir /usr/share/zabbix
 		/bin/cp -R "${S}/database/" "${D}"/usr/share/zabbix/
 		systemd_dounit "${FILESDIR}/zabbix-proxy.service"
@@ -196,8 +196,8 @@ src_install() {
 
 	if use agent; then
 		insinto /etc/zabbix
-		doins "${FILESDIR}/3.0"/zabbix_agentd.conf
-		doinitd "${FILESDIR}/3.0"/init.d/zabbix-agentd
+		doins "${FILESDIR}/4.0"/zabbix_agentd.conf
+		doinitd "${FILESDIR}/4.0"/init.d/zabbix-agentd
 		dosbin src/zabbix_agent/zabbix_agentd
 		dobin \
 			src/zabbix_sender/zabbix_sender \
@@ -258,8 +258,8 @@ src_install() {
 			src/zabbix_java/lib/android-json-4.3_r3.1.jar \
 			src/zabbix_java/lib/slf4j-api-1.6.1.jar
 		fowners -R zabbix:zabbix /${ZABBIXJAVA_BASE}
-		doinitd "${FILESDIR}"/3.0/init.d/zabbix-jmx-proxy
-		doconfd "${FILESDIR}"/3.0/conf.d/zabbix-jmx-proxy
+		doinitd "${FILESDIR}"/4.0/init.d/zabbix-jmx-proxy
+		doconfd "${FILESDIR}"/4.0/conf.d/zabbix-jmx-proxy
 	fi
 }
 
