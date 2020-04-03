@@ -1,0 +1,61 @@
+From: Willy Tarreau <w@1wt.eu>
+Date: Wed, 19 Feb 2020 14:10:00 +0000 (+0100)
+Subject: BUG/MINOR: connection: make sure to correctly tag local PROXY connections
+X-Git-Tag: v2.0.14~69
+X-Git-Url: http://git.haproxy.org/?p=haproxy-2.0.git;a=commitdiff_plain;h=52d0ed904f97b85d846416ae9cb20798b7452770
+
+BUG/MINOR: connection: make sure to correctly tag local PROXY connections
+
+As reported in issue #511, when sending an outgoing local connection
+(e.g. health check) we must set the "local" tag and not a "proxy" tag.
+The issue comes from historic support on v1 which required to steal the
+address on the outgoing connection for such ones, creating confusion in
+the v2 code which believes it sees the incoming connection.
+
+In order not to risk to break existing setups which might rely on seeing
+the LB's address in the connection's source field, let's just change the
+connection type from proxy to local and keep the addresses. The protocol
+spec states that for local, the addresses must be ignored anyway.
+
+This problem has always existed, this can be backported as far as 1.5,
+though it's probably not a good idea to change such setups, thus maybe
+2.0 would be more reasonable.
+
+(cherry picked from commit 7f26391bc51ad56c31480d03f56e1db604f1c617)
+Signed-off-by: Christopher Faulet <cfaulet@haproxy.com>
+(cherry picked from commit f1b378487af3f22fd66b8013e52530c9a6c522de)
+Signed-off-by: Christopher Faulet <cfaulet@haproxy.com>
+---
+
+diff --git a/src/connection.c b/src/connection.c
+index 6dc50a1..bf82f41 100644
+--- a/src/connection.c
++++ b/src/connection.c
+@@ -1233,11 +1233,18 @@ int make_proxy_line_v2(char *buf, int buf_len, struct server *srv, struct connec
+ 		ret = PP2_HDR_LEN_UNSPEC;
+ 	}
+ 	else {
++		/* Note: due to historic compatibility with V1 which required
++		 * to send "PROXY" with local addresses for local connections,
++		 * we can end up here with the remote in fact being our outgoing
++		 * connection. We still want to send real addresses and LOCAL on
++		 * it.
++		 */
++		hdr->ver_cmd = PP2_VERSION;
++		hdr->ver_cmd |= conn_is_back(remote) ? PP2_CMD_LOCAL : PP2_CMD_PROXY;
+ 		/* IPv4 for both src and dst */
+ 		if (src->ss_family == AF_INET && dst->ss_family == AF_INET) {
+ 			if (buf_len < PP2_HDR_LEN_INET)
+ 				return 0;
+-			hdr->ver_cmd = PP2_VERSION | PP2_CMD_PROXY;
+ 			hdr->fam = PP2_FAM_INET | PP2_TRANS_STREAM;
+ 			hdr->addr.ip4.src_addr = ((struct sockaddr_in *)src)->sin_addr.s_addr;
+ 			hdr->addr.ip4.src_port = ((struct sockaddr_in *)src)->sin_port;
+@@ -1251,7 +1258,6 @@ int make_proxy_line_v2(char *buf, int buf_len, struct server *srv, struct connec
+ 
+ 			if (buf_len < PP2_HDR_LEN_INET6)
+ 				return 0;
+-			hdr->ver_cmd = PP2_VERSION | PP2_CMD_PROXY;
+ 			hdr->fam = PP2_FAM_INET6 | PP2_TRANS_STREAM;
+ 			if (src->ss_family == AF_INET) {
+ 				v4tov6(&tmp, &((struct sockaddr_in *)src)->sin_addr);
