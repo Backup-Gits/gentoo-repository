@@ -68,7 +68,7 @@ PATCHES=(
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-rocksdb-use-system-libs.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-fix-libressl-support.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-without-clientlibs-tools.patch
-#	"${FILESDIR}"/fts-punctation-word.patch
+	"${FILESDIR}"/fts-punctation-word.patch
 	"${FILESDIR}"/protobuf.patch
 )
 
