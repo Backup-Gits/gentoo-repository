@@ -90,8 +90,8 @@ BDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/${P}-modulepathfix.patch"
-	"${FILESDIR}/${P}-security-disable-PidFile.patch"
+	"${FILESDIR}/${PN}-modulepathfix.patch"
+	"${FILESDIR}/${PN}-security-disable-PidFile.patch"
 )
 
 S=${WORKDIR}/${MY_P}
