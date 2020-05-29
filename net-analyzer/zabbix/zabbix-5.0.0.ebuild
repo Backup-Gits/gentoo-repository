@@ -11,12 +11,12 @@ DESCRIPTION="ZABBIX is software for monitoring of your applications, network and
 HOMEPAGE="https://www.zabbix.com/"
 MY_P=${P/_/}
 MY_PV=${PV/_/}
-SRC_URI="https://cdn.zabbix.com/zabbix/sources/stable/5.0/${MY_P}.tar.gz"
+SRC_URI="https://cdn.zabbix.com/${PN}/sources/stable/$(ver_cut 1-2)/${P}.tar.gz"
 LICENSE="GPL-2"
 SLOT="0"
 WEBAPP_MANUAL_SLOT="yes"
 KEYWORDS="~amd64 ~x86"
-IUSE="+agent +agent2 java curl frontend ipv6 ldap libxml2 mysql openipmi oracle +postgres proxy server ssh ssl snmp sqlite odbc static"
+IUSE="+agent agent2 java curl frontend ipv6 ldap libxml2 mysql openipmi oracle +postgres proxy server ssh ssl snmp sqlite odbc static"
 REQUIRED_USE="|| ( agent frontend proxy server )
 	proxy? ( ^^ ( mysql oracle postgres sqlite odbc ) )
 	server? ( ^^ ( mysql oracle postgres odbc ) )
@@ -252,7 +252,7 @@ src_install() {
 
 	if use frontend; then
 		webapp_src_preinst
-		cp -R frontends/php/* "${D}/${MY_HTDOCSDIR}"
+		cp -R ui/* "${D}/${MY_HTDOCSDIR}"
 		webapp_configfile \
 			"${MY_HTDOCSDIR}"/include/db.inc.php \
 			"${MY_HTDOCSDIR}"/include/config.inc.php
