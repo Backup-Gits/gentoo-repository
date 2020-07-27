@@ -12,7 +12,7 @@ DESCRIPTION="A TCP/HTTP reverse proxy for high availability environments"
 HOMEPAGE="http://www.haproxy.org"
 if [[ ${PV} != *9999 ]]; then
 	SRC_URI="http://haproxy.1wt.eu/download/$(ver_cut 1-2)/src/${MY_P}.tar.gz"
-	KEYWORDS="amd64 ~arm ppc x86"
+	KEYWORDS="~amd64 ~arm ppc ~x86"
 else
 	EGIT_REPO_URI="http://git.haproxy.org/git/haproxy-$(ver_cut 1-2).git/"
 	EGIT_BRANCH=master
@@ -57,6 +57,11 @@ CONTRIBS=( halog iprange )
 ver_test $PV -ge 1.7.0 && CONTRIBS+=( ip6range spoa_example tcploop )
 # TODO: mod_defender - requires apache / APR, modsecurity - the same
 ver_test $PV -ge 1.8.0 && CONTRIBS+=( hpack )
+
+src_prepare() {
+	eapply -p1 "${FILESDIR}"/haproxy-2.2-proxy-revert.patch
+	eapply_user
+}
 
 haproxy_use() {
 	(( $# != 2 )) && die "${FUNCNAME} <USE flag> <make option>"

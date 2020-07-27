@@ -1,0 +1,11 @@
+diff -Nru haproxy-2.2.1/src/connection.c haproxy-2.2.1-revert-proxy/src/connection.c
+--- haproxy-2.2.1/src/connection.c	2020-07-27 21:51:31.231303913 +0200
++++ haproxy-2.2.1-revert-proxy/src/connection.c	2020-07-27 21:59:15.489380049 +0200
+@@ -1377,7 +1377,6 @@
+ 	/* At least one of src or dst is not of AF_INET or AF_INET6 */
+ 	if (  !src
+ 	   || !dst
+-	   || (!pp2_never_send_local && conn_is_back(remote)) // locally initiated connection
+ 	   || (src->ss_family != AF_INET && src->ss_family != AF_INET6)
+ 	   || (dst->ss_family != AF_INET && dst->ss_family != AF_INET6)) {
+ 		if (buf_len < PP2_HDR_LEN_UNSPEC)
