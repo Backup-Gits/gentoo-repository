@@ -13,14 +13,12 @@ KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~
 HOMEPAGE="https://dev.gentoo.org/~mpagano/genpatches"
 IUSE="experimental"
 
-LINUX_HARDENED_PATCH="https://ca95eb596e48788b5275bacf9167e788.zeroone.sk/distfiles/linux-hardened-${KV_MAJOR}.${KV_MINOR}.${K_GENPATCHES_VER}.a.patch"
-# original link
-#LINUX_HARDENED_PATCH="https://github.com/anthraxx/linux-hardened/releases/download/${KV_MAJOR}.${KV_MINOR}.${K_GENPATCHES_VER}.a/linux-hardened-${KV_MAJOR}.${KV_MINOR}.${K_GENPATCHES_VER}.a.patch"
 
 DESCRIPTION="Full sources including the Gentoo patchset for the ${KV_MAJOR}.${KV_MINOR} kernel tree"
-SRC_URI="${KERNEL_URI} ${GENPATCHES_URI} ${ARCH_URI} ${LINUX_HARDENED_PATCH}"
+SRC_URI="${KERNEL_URI} ${GENPATCHES_URI} ${ARCH_URI}"
 
 src_prepare() {
+	#https://github.com/anthraxx/linux-hardened
 	eapply -p1 "${FILESDIR}/linux-hardened-${KV_MAJOR}.${KV_MINOR}.${K_GENPATCHES_VER}.a.patch"
 	#https://github.com/anthraxx/linux-hardened/pull/41
 	eapply -p1 "${FILESDIR}/001-deny-access-to-overly-permissive-IPC-objects.patch"
