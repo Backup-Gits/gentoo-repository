@@ -204,10 +204,11 @@ diff --git a/net/ipv6/sysctl_net_ipv6.c b/net/ipv6/sysctl_net_ipv6.c
 index 63b657aa8d29..ec46f90b8a5e 100644
 --- a/net/ipv6/sysctl_net_ipv6.c
 +++ b/net/ipv6/sysctl_net_ipv6.c
-@@ -21,9 +21,9 @@
+@@ -22,9 +22,9 @@
  #include <net/calipso.h>
  #endif
- 
+
+ static int two = 2;
 -static int flowlabel_reflect_max = 0x7;
 -static int auto_flowlabels_min;
 -static int auto_flowlabels_max = IP6_AUTO_FLOW_LABEL_MAX;
