@@ -21,7 +21,7 @@ P_EXCLUDE="2400_wireguard-backport-v5.4.53.patch"
 src_prepare() {
 #	eapply -p1 "${FILESDIR}/linux-5.4.58.patch"
 	#https://github.com/anthraxx/linux-hardened
-	eapply -p1 "${FILESDIR}/linux-hardened-${KV_MAJOR}.${KV_MINOR}.65.a.patch"
+	eapply -p1 "${FILESDIR}/linux-hardened-${KV_MAJOR}.${KV_MINOR}.66.a.patch"
 	#https://github.com/anthraxx/linux-hardened/pull/41
 	eapply -p1 "${FILESDIR}/001-deny-access-to-overly-permissive-IPC-objects.patch"
 	eapply -p1 "${FILESDIR}/002-deny-access-to-overly-permissive-IPC-objects.patch"
