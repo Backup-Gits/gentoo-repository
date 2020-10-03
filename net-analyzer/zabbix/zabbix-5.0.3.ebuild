@@ -16,7 +16,7 @@ LICENSE="GPL-2"
 SLOT="0"
 WEBAPP_MANUAL_SLOT="yes"
 KEYWORDS="~amd64 ~x86"
-IUSE="+agent agent2 java curl frontend ipv6 ldap libxml2 mysql openipmi oracle +postgres proxy server ssh ssl snmp sqlite odbc static"
+IUSE="+agent java curl frontend ipv6 ldap libxml2 mysql openipmi oracle +postgres proxy server ssh ssl snmp sqlite odbc static agent2"
 REQUIRED_USE="|| ( agent frontend proxy server )
 	proxy? ( ^^ ( mysql oracle postgres sqlite odbc ) )
 	server? ( ^^ ( mysql oracle postgres odbc ) )
@@ -90,8 +90,8 @@ BDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/${PN}-modulepathfix.patch"
-	"${FILESDIR}/${PN}-security-disable-PidFile.patch"
+	"${FILESDIR}/${PN}-4.0.18-modulepathfix.patch"
+	"${FILESDIR}/${PN}-3.0.30-security-disable-PidFile.patch"
 )
 
 S=${WORKDIR}/${MY_P}
@@ -138,7 +138,6 @@ src_configure() {
 		$(use_enable proxy) \
 		$(use_enable server) \
 		$(use_enable static) \
-		$(use_enable agent2) \
 		$(use_with curl libcurl) \
 		$(use_with ldap) \
 		$(use_with libxml2) \
@@ -150,7 +149,8 @@ src_configure() {
 		$(use_with snmp net-snmp) \
 		$(use_with sqlite sqlite3) \
 		$(use_with ssh ssh2) \
-		$(use_with ssl openssl)
+		$(use_with ssl openssl) \
+		$(use_enable agent2)
 }
 
 src_compile() {
@@ -296,7 +296,7 @@ pkg_postinst() {
 			ewarn "custom alert scripts."
 			ewarn
 			ewarn "A real homedir might be needed for configfiles"
-			ewarn "for custom alert scripts)."
+			ewarn "for custom alert scripts."
 			ewarn
 			ewarn "To change the homedir use:"
 			ewarn "  usermod -d /var/lib/zabbix/home zabbix"
