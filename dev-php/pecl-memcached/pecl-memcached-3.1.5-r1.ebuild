@@ -5,7 +5,7 @@ EAPI=7
 PHP_EXT_NAME="memcached"
 DOCS=( ChangeLog README.markdown )
 
-USE_PHP="php5-6 php7-2 php7-3 php7-4"
+USE_PHP="php7-2 php7-3 php7-4"
 inherit php-ext-pecl-r3
 
 DESCRIPTION="Interface PHP with memcached via libmemcached library"
@@ -21,10 +21,6 @@ COMMON_DEPEND=">=dev-libs/libmemcached-1.0.14[sasl(-)?]
 "
 
 RDEPEND="
-	php_targets_php5-6? (
-		${COMMON_DEPEND} dev-lang/php:5.6[session(-)?,json(-)?]
-		igbinary? ( dev-php/igbinary[php_targets_php5-6(-)] )
-	)
 	php_targets_php7-2? (
 		${COMMON_DEPEND} dev-lang/php:7.2[session(-)?,json(-)?]
 		igbinary? ( dev-php/igbinary[php_targets_php7-2(-)] )
