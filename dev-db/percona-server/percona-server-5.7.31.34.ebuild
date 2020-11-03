@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="6"
@@ -36,15 +36,14 @@ DESCRIPTION="A fast, multi-threaded, multi-user SQL database server"
 LICENSE="GPL-2"
 SLOT="5.7/18"
 IUSE="cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
-	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl
-	sphinx"
+	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx coredumper"
 
 # Tests always fail when libressl is enabled due to hard-coded ciphers in the tests
-RESTRICT="!test? ( test ) libressl? ( test )"
+RESTRICT="libressl? ( test )"
 
 REQUIRED_USE="?? ( tcmalloc jemalloc ) static? ( yassl )"
 
-KEYWORDS="~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x86-macos ~x64-solaris ~x86-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~x64-macos ~x86-macos ~x64-solaris ~x86-solaris"
 
 # Shorten the path because the socket path length must be shorter than 107 chars
 # and we will run a mysql server during test phase
@@ -61,13 +60,12 @@ else
 fi
 
 PATCHES=(
-	"${MY_PATCH_DIR}"/20018_all_mysql-5.7.23-add-missing-gcc-8-fix.patch
 	"${FILESDIR}"/20018_all_mysql-5.7.23-round-off-test-values-for-same-output-on-all-architectures.patch
 	"${FILESDIR}"/20018_all_mysql-5.7.23-fix-grant_user_lock-a-root.patch
 	"${FILESDIR}"/20001_percona_fix-minimal-build-cmake-5.7.28.patch
 	"${FILESDIR}"/20007_percona_cmake-debug-werror-5.7.28.patch
 	"${FILESDIR}"/20009_percona_mysql_myodbc_symbol_fix-5.7.28.patch
-#	"${FILESDIR}"/20018_all_percona-server-5.7.28-rocksdb-use-system-libs.patch
+	"${FILESDIR}"/20018_all_percona-server-5.7.23-rocksdb-use-system-libs.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-fix-libressl-support.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-without-clientlibs-tools.patch
 	"${FILESDIR}"/fts-punctation-word.patch
@@ -144,8 +142,6 @@ DEPEND="${COMMON_DEPEND}
 "
 RDEPEND="${COMMON_DEPEND}
 	!dev-db/mariadb !dev-db/mariadb-galera !dev-db/mysql !dev-db/mysql-cluster
-	!dev-db/percona-server:0
-	!dev-db/percona-server:8.0
 	client-libs? ( !dev-db/mariadb-connector-c[mysqlcompat] !dev-db/mysql-connector-c dev-libs/protobuf:= )
 	selinux? ( sec-policy/selinux-mysql )
 	server? (
@@ -165,10 +161,10 @@ python_check_deps() {
 }
 
 mysql_init_vars() {
-	MY_SHAREDSTATEDIR=${MY_SHAREDSTATEDIR="${EPREFIX}/usr/share/mysql"}
-	MY_SYSCONFDIR=${MY_SYSCONFDIR="${EPREFIX}/etc/mysql"}
-	MY_LOCALSTATEDIR=${MY_LOCALSTATEDIR="${EPREFIX}/var/lib/mysql"}
-	MY_LOGDIR=${MY_LOGDIR="${EPREFIX}/var/log/mysql"}
+	MY_SHAREDSTATEDIR=${MY_SHAREDSTATEDIR="${EPREFIX%/}/usr/share/mysql"}
+	MY_SYSCONFDIR=${MY_SYSCONFDIR="${EPREFIX%/}/etc/mysql"}
+	MY_LOCALSTATEDIR=${MY_LOCALSTATEDIR="${EPREFIX%/}/var/lib/mysql"}
+	MY_LOGDIR=${MY_LOGDIR="${EPREFIX%/}/var/log/mysql"}
 
 	if [[ -z "${MY_DATADIR}" ]] ; then
 		MY_DATADIR=""
@@ -311,11 +307,12 @@ src_unpack() {
 }
 
 src_prepare() {
-	if use sphinx; then
+	if use sphinx ; then
 		PATCHES+=(
 			"${FILESDIR}"/mysql-sphinx.patch
 		)
 	fi
+
 	cmake-utils_src_prepare
 
 	if use jemalloc ; then
@@ -368,13 +365,16 @@ src_prepare() {
 	fi
 
 	sed -i 's~ADD_SUBDIRECTORY(storage/ndb)~~' CMakeLists.txt || die
+
 }
 
-src_configure() {
+src_configure(){
 	# Bug #114895, bug #110149
 	filter-flags "-O" "-O[01]"
 
 	append-cxxflags -felide-constructors
+	append-cxxflags -std=gnu++11
+	append-flags -std=gnu++11
 
 	# bug #283926, with GCC4.4, this is required to get correct behavior.
 	append-flags -fno-strict-aliasing
@@ -404,8 +404,9 @@ multilib_src_configure() {
 	mycmakeargs=(
 		-DCMAKE_C_FLAGS_RELWITHDEBINFO="$(usex debug '' '-DNDEBUG')"
 		-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="$(usex debug '' '-DNDEBUG')"
-		-DMYSQL_DATADIR="${EPREFIX}/var/lib/mysql"
-		-DSYSCONFDIR="${EPREFIX}/etc/mysql"
+		-DCMAKE_INSTALL_PREFIX="${EPREFIX%/}/usr"
+		-DMYSQL_DATADIR="${EPREFIX%/}/var/lib/mysql"
+		-DSYSCONFDIR="${EPREFIX%/}/etc/mysql"
 		-DINSTALL_BINDIR=bin
 		-DINSTALL_DOCDIR=share/doc/${PF}
 		-DINSTALL_DOCREADMEDIR=share/doc/${PF}
@@ -416,9 +417,9 @@ multilib_src_configure() {
 		-DINSTALL_MYSQLSHAREDIR=share/mysql
 		-DINSTALL_PLUGINDIR=$(get_libdir)/mysql/plugin
 		-DINSTALL_SCRIPTDIR=share/mysql/scripts
-		-DINSTALL_MYSQLDATADIR="${EPREFIX}/var/lib/mysql"
+		-DINSTALL_MYSQLDATADIR="${EPREFIX%/}/var/lib/mysql"
 		-DINSTALL_SBINDIR=sbin
-		-DINSTALL_SUPPORTFILESDIR="${EPREFIX}/usr/share/mysql"
+		-DINSTALL_SUPPORTFILESDIR="${EPREFIX%/}/usr/share/mysql"
 		-DCOMPILATION_COMMENT="Gentoo Linux ${PF}"
 		-DWITH_UNIT_TESTS=$(usex test ON OFF)
 		### TODO: make this system but issues with UTF-8 prevent it
@@ -426,7 +427,7 @@ multilib_src_configure() {
 		-DWITH_ZLIB=system
 		-DWITH_LIBWRAP=0
 		-DENABLED_LOCAL_INFILE=1
-		-DMYSQL_UNIX_ADDR="${EPREFIX}/var/run/mysqld/mysqld.sock"
+		-DMYSQL_UNIX_ADDR="${EPREFIX%/}/var/run/mysqld/mysqld.sock"
 		-DWITH_DEFAULT_COMPILER_OPTIONS=0
 		-DWITH_DEFAULT_FEATURE_SET=0
 		# The build forces this to be defined when cross-compiling. We pass it
@@ -435,6 +436,7 @@ multilib_src_configure() {
 		-DWITH_CURL=system
 		-DWITH_BOOST="${WORKDIR}/boost_1_59_0"
 		-DWITH_PROTOBUF=system
+		-DWITH_COREDUMPER=$(usex coredumper ON OFF)
 	)
 
 	if use test ; then
@@ -661,33 +663,6 @@ src_test() {
 			_disable_test "$t" "False positives in Gentoo / Known bug"
 	done
 
-	# Unstable tests
-	# - main.xa_prepared_binlog_off: https://bugs.mysql.com/bug.php?id=83340
-	# - rpl.rpl_innodb_info_tbl_slave_tmp_tbl_mismatch: https://bugs.mysql.com/bug.php?id=89223
-	# - rpl.rpl_non_direct_stm_mixing_engines: MDEV-14489
-	for t in \
-		main.xa_prepared_binlog_off \
-		rpl.rpl_innodb_info_tbl_slave_tmp_tbl_mismatch \
-		rpl.rpl_non_direct_stm_mixing_engines \
-	; do
-		_disable_test "$t" "Unstable test"
-	done
-
-	for t in \
-		gis.geometry_class_attri_prop \
-		gis.geometry_property_function_issimple \
-		gis.gis_bugs_crashes \
-		gis.spatial_op_testingfunc_mix \
-		gis.spatial_analysis_functions_buffer \
-		gis.spatial_analysis_functions_centroid \
-		gis.spatial_analysis_functions_distance \
-		gis.spatial_op_testingfunc_mix \
-		gis.spatial_utility_function_distance_sphere \
-		gis.spatial_utility_function_simplify \
-	; do
-		_disable_test "$t" "Known rounding error with latest AMD processors"
-	done
-
 	if has_version ">=dev-libs/openssl-1.1.1" ; then
 		for t in \
 			main.ssl_8k_key \
@@ -866,6 +841,16 @@ multilib_src_install_all() {
 		rm -rf "${D}/${MY_SHAREDSTATEDIR}/mysql-test"
 	fi
 
+	if use coredumper ; then
+		rm -fv \
+			"${ED%/}"/usr/cmake/coredumper-relwithdebinfo.cmake \
+			"${ED%/}"/usr/cmake/coredumper.cmake \
+		|| die 
+		rmdir -v \
+			"${ED%/}"/usr/cmake \
+			|| die
+	fi
+
 	# Configuration stuff
 	einfo "Building default configuration ..."
 	insinto "${MY_SYSCONFDIR#${EPREFIX}}"
@@ -925,7 +910,7 @@ pkg_config() {
 	local old_MY_DATADIR="${MY_DATADIR}"
 	local old_HOME="${HOME}"
 	# my_print_defaults needs to read stuff in $HOME/.my.cnf
-	export HOME=${EPREFIX}/root
+	export HOME=${EPREFIX%/}/root
 
 	# Make sure the vars are correctly initialized
 	mysql_init_vars
@@ -1081,13 +1066,13 @@ pkg_config() {
 	# --initialize-insecure will not set root password
 	# --initialize would set a random one in the log which we don't need as we set it ourselves
 	local cmd=( "${EROOT%/}/usr/sbin/mysqld" "--initialize-insecure" "--init-file='${sqltmp}'" )
-	cmd+=( "--basedir=${EPREFIX}/usr" ${options} "--datadir=${ROOT%/}${MY_DATADIR}" "--tmpdir=${ROOT%/}${MYSQL_TMPDIR}" )
+	cmd+=( "--basedir=${EPREFIX%/}/usr" ${options} "--datadir=${ROOT%/}${MY_DATADIR}" "--tmpdir=${ROOT%/}${MYSQL_TMPDIR}" )
 	einfo "Command: ${cmd[*]}"
 	su -s /bin/sh -c "${cmd[*]}" mysql \
 		>"${TMPDIR%/}"/mysql_install_db.log 2>&1
 	if [[ $? -ne 0 ]] ; then
 		grep -B5 -A999 -i "ERROR" "${TMPDIR%/}"/mysql_install_db.log 1>&2
-		die "Failed to initialize mysqld. Please review ${EPREFIX}/var/log/mysql/mysqld.err AND ${TMPDIR%/}/mysql_install_db.log"
+		die "Failed to initialize mysqld. Please review ${EPREFIX%/}/var/log/mysql/mysqld.err AND ${TMPDIR%/}/mysql_install_db.log"
 	fi
 	popd &>/dev/null || die
 	[[ -f "${ROOT%/}/${MY_DATADIR}/mysql/user.frm" ]] \
