@@ -1,0 +1,11 @@
+diff -Nru haproxy-2.2.5/include/haproxy/hpack-tbl-t.h haproxy-2.2.5.patched/include/haproxy/hpack-tbl-t.h
+--- haproxy-2.2.5/include/haproxy/hpack-tbl-t.h 2020-11-05 15:13:47.000000000 +0100
++++ haproxy-2.2.5.patched/include/haproxy/hpack-tbl-t.h 2020-11-07 21:43:13.961789375 +0100
+@@ -28,6 +28,7 @@
+ #define _HAPROXY_HPACK_TBL_T_H
+
+ #include <inttypes.h>
++#include <haproxy/api.h>
+
+ /* Dynamic Headers Table, usable for tables up to 4GB long and values of 64kB-1.
+  * The model can be improved by using offsets relative to the table entry's end
