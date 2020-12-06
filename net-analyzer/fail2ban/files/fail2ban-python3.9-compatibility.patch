@@ -1,0 +1,20 @@
+From 55e76c0b807e87f6a04d459bb9c59da33c98572b Mon Sep 17 00:00:00 2001
+From: "Sergey G. Brester" <serg.brester@sebres.de>
+Date: Fri, 6 Mar 2020 19:41:16 +0100
+Subject: [PATCH] restore isAlive method removed in python 3.9
+
+---
+ fail2ban/server/jailthread.py | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fail2ban/server/jailthread.py b/fail2ban/server/jailthread.py
+index d0430367b..94f34542d 100644
+--- a/fail2ban/server/jailthread.py
++++ b/fail2ban/server/jailthread.py
+@@ -120,3 +120,6 @@ def join(self):
+ ## python 2.x replace binding of private __bootstrap method:
+ if sys.version_info < (3,): # pragma: 3.x no cover
+ 	JailThread._Thread__bootstrap = JailThread._JailThread__bootstrap
++## python 3.9, restore isAlive method:
++elif not hasattr(JailThread, 'isAlive'): # pragma: 2.x no cover
++	 JailThread.isAlive = JailThread.is_alive

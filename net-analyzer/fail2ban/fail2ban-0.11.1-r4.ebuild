@@ -25,9 +25,6 @@ RDEPEND="
 		sys-apps/systemd[python(-),${PYTHON_MULTI_USEDEP}]
 	)' 'python*' ) )
 "
-PATCHES=(
-	"${FILESDIR}"/fail2ban-python3.9-compatibility.patch
-)
 
 RESTRICT="test"
 DOCS=( ChangeLog DEVELOP README.md THANKS TODO doc/run-rootless.txt )
@@ -35,6 +32,8 @@ DOCS=( ChangeLog DEVELOP README.md THANKS TODO doc/run-rootless.txt )
 python_prepare_all() {
 	default
 
+	eapply -p1 "${FILESDIR}/fail2ban-python3.9-compatibility.patch"
+	eapply_user
 	# Replace /var/run with /run, but not in the top source directory
 	find . -mindepth 2 -type f -exec \
 		sed -i -e 's|/var\(/run/fail2ban\)|\1|g' {} + || die
