@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~hppa ~ppc64 ~x86"
 
 DESCRIPTION="PHP extension for using memcached"
 LICENSE="PHP-3"
-SLOT="0"
+SLOT="5.6"
 IUSE="+session"
 
 DEPEND="sys-libs/zlib
