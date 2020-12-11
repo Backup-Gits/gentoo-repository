@@ -4,7 +4,7 @@
 EAPI=7
 
 PHP_EXT_NAME="redis"
-USE_PHP="php7-2 php7-3 php7-4 php8-0"
+USE_PHP="php7-2 php7-3 php7-4"
 PHP_EXT_NEEDED_USE="json?,session?"
 DOCS=( arrays.markdown cluster.markdown README.markdown CREDITS )
 MY_P="${PN/pecl-/}-${PV/_rc/RC}"
@@ -20,7 +20,7 @@ KEYWORDS="~amd64 ~arm"
 IUSE="igbinary +json lz4 +session zstd"
 
 DEPEND="
-	igbinary? ( >=dev-php/igbinary-3.0.1-r1[php_targets_php7-2?,php_targets_php7-3?,php_targets_php7-4?,php_targets_php8-0] )
+	igbinary? ( >=dev-php/igbinary-3.0.1-r1[php_targets_php7-2?,php_targets_php7-3?,php_targets_php7-4?] )
 	lz4? ( app-arch/lz4:= )
 	zstd? ( app-arch/zstd:= )
 "
@@ -38,13 +38,14 @@ src_configure() {
 		--disable-redis-lzf
 		--disable-redis-msgpack
 		$(use_enable igbinary redis-igbinary)
-		$(use_enable json redis-json)
 		$(use_enable lz4 redis-lz4)
 		$(use_with lz4 liblz4)
 		$(use_enable session redis-session)
 		$(use_enable zstd redis-zstd)
 		$(use_with zstd libzstd)
-	)
+		$(use_enable json redis-json)
+		)
+
 	php-ext-source-r3_src_configure
 }
 
