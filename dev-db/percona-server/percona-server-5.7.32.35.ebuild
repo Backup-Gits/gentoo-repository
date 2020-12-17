@@ -27,15 +27,16 @@ SRC_URI="https://www.percona.com/downloads/${MY_PN}-${MY_MAJOR_PV}/${MY_PN}-${MY
 # Gentoo patches to MySQL
 if [[ "${MY_EXTRAS_VER}" != "live" && "${MY_EXTRAS_VER}" != "none" ]] ; then
 	SRC_URI="${SRC_URI}
+		mirror://gentoo/mysql-extras-${MY_EXTRAS_VER}.tar.bz2
 		https://gitweb.gentoo.org/proj/mysql-extras.git/snapshot/mysql-extras-${MY_EXTRAS_VER}.tar.bz2"
 fi
 
 HOMEPAGE="https://www.percona.com/software/mysql-database/percona-server"
 DESCRIPTION="A fast, multi-threaded, multi-user SQL database server"
 LICENSE="GPL-2"
-SLOT="0/18"
+SLOT="5.7/18"
 IUSE="cjk client-libs cracklib debug experimental jemalloc latin1 libressl numa pam +perl profiling rocksdb
-	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx"
+	selinux +server static static-libs systemtap tcmalloc test tokudb tokudb-backup-plugin yassl sphinx coredumper"
 
 # Tests always fail when libressl is enabled due to hard-coded ciphers in the tests
 RESTRICT="libressl? ( test )"
@@ -64,7 +65,7 @@ PATCHES=(
 	"${FILESDIR}"/20001_percona_fix-minimal-build-cmake-5.7.28.patch
 	"${FILESDIR}"/20007_percona_cmake-debug-werror-5.7.28.patch
 	"${FILESDIR}"/20009_percona_mysql_myodbc_symbol_fix-5.7.28.patch
-	"${FILESDIR}"/20018_all_percona-server-5.7.28-rocksdb-use-system-libs.patch
+#	"${FILESDIR}"/20018_all_percona-server-5.7.23-rocksdb-use-system-libs.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-fix-libressl-support.patch
 	"${FILESDIR}"/20018_all_percona-server-5.7.28-without-clientlibs-tools.patch
 	"${FILESDIR}"/fts-punctation-word.patch
@@ -372,6 +373,8 @@ src_configure(){
 	filter-flags "-O" "-O[01]"
 
 	append-cxxflags -felide-constructors
+	append-cxxflags -std=gnu++11
+	append-flags -std=gnu++11
 
 	# bug #283926, with GCC4.4, this is required to get correct behavior.
 	append-flags -fno-strict-aliasing
@@ -433,6 +436,7 @@ multilib_src_configure() {
 		-DWITH_CURL=system
 		-DWITH_BOOST="${WORKDIR}/boost_1_59_0"
 		-DWITH_PROTOBUF=system
+		-DWITH_COREDUMPER=$(usex coredumper ON OFF)
 	)
 
 	if use test ; then
@@ -835,6 +839,16 @@ multilib_src_install_all() {
 	# validation of your database configuration after tuning it.
 	if ! use test ; then
 		rm -rf "${D}/${MY_SHAREDSTATEDIR}/mysql-test"
+	fi
+
+	if use coredumper ; then
+		rm -fv \
+			"${ED%/}"/usr/cmake/coredumper-relwithdebinfo.cmake \
+			"${ED%/}"/usr/cmake/coredumper.cmake \
+		|| die 
+		rmdir -v \
+			"${ED%/}"/usr/cmake \
+			|| die
 	fi
 
 	# Configuration stuff
