@@ -1,42 +1,8 @@
-From a85a3617e27f15515364726fd5efa1fbe1dabd93 Mon Sep 17 00:00:00 2001
-From: madaidan <50278627+madaidan@users.noreply.github.com>
-Date: Thu, 21 May 2020 00:51:47 +0000
-Subject: [PATCH] Deny access to overly-permissive IPC objects
-
-This is modified from Brad Spengler/PaX Team's code in the last
-public patch of grsecurity/PaX based on my understanding of the code. Changes
-or omissions from the original code are mine and don't reflect the original
-grsecurity/PaX code.
-
-It's a common error to grant too much permission to these objects,
-with impact ranging from denial of service and information leaking to
-privilege escalation.
-
-This creates the kernel.harden_ipc sysctl that when enabled will deny
-access to overly-permissive IPC objects given the following criteria:
-
-1) If the IPC object is world-accessible and the euid doesn't match
-   that of the creator or current uid for the IPC object
-2) If the IPC object is group-accessible and the egid doesn't
-   match that of the creator or current gid for the IPC object
-
-Processes with CAP_IPC_OWNER are still permitted to access these IPC objects.
----
- Documentation/admin-guide/sysctl/kernel.rst | 23 +++++++++++
- include/linux/ipc.h                         |  2 +
- ipc/Makefile                                |  2 +-
- ipc/harden_ipc.c                            | 46 +++++++++++++++++++++
- ipc/util.c                                  |  6 +++
- kernel/sysctl.c                             | 12 ++++++
- security/Kconfig                            | 20 +++++++++
- 7 files changed, 110 insertions(+), 1 deletion(-)
- create mode 100644 ipc/harden_ipc.c
-
 diff --git a/Documentation/admin-guide/sysctl/kernel.rst b/Documentation/admin-guide/sysctl/kernel.rst
-index cff409b35952..a24286fc19ca 100644
+index 3cd263f8ac46..e8365528b50c 100644
 --- a/Documentation/admin-guide/sysctl/kernel.rst
 +++ b/Documentation/admin-guide/sysctl/kernel.rst
-@@ -218,6 +218,29 @@ The kernel config option ``CONFIG_SECURITY_DMESG_RESTRICT`` sets the
+@@ -243,6 +243,29 @@ The kernel config option ``CONFIG_SECURITY_DMESG_RESTRICT`` sets the
  default value of ``dmesg_restrict``.
  
  
@@ -63,7 +29,7 @@ index cff409b35952..a24286fc19ca 100644
 +CAP_IPC_OWNER are still permitted to access these IPC objects.
 +
 +
- domainname & hostname:
+ domainname & hostname
  =====================
  
 diff --git a/include/linux/ipc.h b/include/linux/ipc.h
@@ -145,7 +111,7 @@ index 000000000000..e1483dade46b
 +	return 1;
 +}
 diff --git a/ipc/util.c b/ipc/util.c
-index fe61df53775a..7ab7d4a1bf4d 100644
+index cfa0045e748d..a5d95fca8a11 100644
 --- a/ipc/util.c
 +++ b/ipc/util.c
 @@ -76,6 +76,8 @@ struct ipc_proc_iface {
@@ -169,18 +135,18 @@ index fe61df53775a..7ab7d4a1bf4d 100644
  	if ((requested_mode & ~granted_mode & 0007) &&
  	    !ns_capable(ns->user_ns, CAP_IPC_OWNER))
 diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 87bc1d26c376..aae2155f24b0 100644
+index 8fd007fbec4c..f714f71b3ba1 100644
 --- a/kernel/sysctl.c
 +++ b/kernel/sysctl.c
-@@ -69,6 +69,7 @@
- #include <linux/mount.h>
- #include <linux/userfaultfd_k.h>
- #include <linux/tty.h>
+@@ -71,6 +71,7 @@
+ #include <linux/coredump.h>
+ #include <linux/latencytop.h>
+ #include <linux/pid.h>
 +#include <linux/ipc.h>
  
  #include "../lib/kstrtox.h"
  
-@@ -931,6 +932,17 @@ static struct ctl_table kern_table[] = {
+@@ -2309,6 +2310,17 @@ static struct ctl_table kern_table[] = {
  		.extra1		= SYSCTL_ZERO,
  		.extra2		= SYSCTL_ONE,
  	},
@@ -197,15 +163,20 @@ index 87bc1d26c376..aae2155f24b0 100644
 +	},
  #endif
  	{
- 		.procname	= "ngroups_max",
+ 		.procname	= "device_sidechannel_restrict",
 diff --git a/security/Kconfig b/security/Kconfig
-index 127b54aecf87..8ad042218d62 100644
+index 615205c0113b..6c567f0f25bf 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -42,6 +42,26 @@ config SECURITY_TIOCSTI_RESTRICT
+@@ -42,6 +42,31 @@ config SECURITY_TIOCSTI_RESTRICT
  
  	  If you are unsure how to answer this question, answer N.
  
++	  This setting can be overridden at runtime via the kernel.harden_ipc
++	  sysctl.
++
++	  If unsure, say Y.
++
 +config SECURITY_HARDEN_IPC
 +	bool "Disallow access to overly-permissive IPC objects"
 +	default y

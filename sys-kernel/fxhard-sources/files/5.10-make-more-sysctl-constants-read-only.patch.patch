@@ -1,27 +1,5 @@
-From 2197d0f0a707d78c8540df3dbcf5c392539adcaf Mon Sep 17 00:00:00 2001
-From: madaidan <50278627+madaidan@users.noreply.github.com>
-Date: Tue, 12 May 2020 00:13:04 +0000
-Subject: [PATCH] Make more sysctl constants read-only
-
----
- ipc/mq_sysctl.c                |  8 +++----
- kernel/sysctl-test.c           |  4 ++--
- lib/test_sysctl.c              |  4 ++--
- net/ax25/sysctl_net_ax25.c     | 28 +++++++++++-----------
- net/core/sysctl_net_core.c     | 12 +++++-----
- net/decnet/sysctl_net_decnet.c | 16 ++++++-------
- net/ipv4/sysctl_net_ipv4.c     | 44 +++++++++++++++++-----------------
- net/ipv6/sysctl_net_ipv6.c     |  6 ++---
- net/netrom/sysctl_net_netrom.c | 32 ++++++++++++-------------
- net/phonet/sysctl.c            |  4 ++--
- net/rose/sysctl_net_rose.c     | 18 +++++++-------
- net/rxrpc/sysctl.c             | 12 +++++-----
- net/sctp/sysctl.c              | 28 +++++++++++-----------
- net/x25/sysctl_net_x25.c       |  4 ++--
- 14 files changed, 110 insertions(+), 110 deletions(-)
-
 diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
-index 7c00f28923a8..35385ecaf43e 100644
+index 72a92a08c848..12cd5356743e 100644
 --- a/ipc/mq_sysctl.c
 +++ b/ipc/mq_sysctl.c
 @@ -43,11 +43,11 @@ static int proc_mq_dointvec_minmax(struct ctl_table *table, int write,
@@ -41,7 +19,7 @@ index 7c00f28923a8..35385ecaf43e 100644
  static struct ctl_table mq_sysctls[] = {
  	{
 diff --git a/lib/test_sysctl.c b/lib/test_sysctl.c
-index 566dad3f4196..829df2de9df4 100644
+index 3750323973f4..249ba1883eaa 100644
 --- a/lib/test_sysctl.c
 +++ b/lib/test_sysctl.c
 @@ -36,8 +36,8 @@
@@ -96,20 +74,22 @@ index 2154d004d3dc..a7855a4615fd 100644
  
  static const struct ctl_table ax25_param_table[] = {
 diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 9f9e00ba3ad7..9b14e4dfe8ff 100644
+index d86d8d11cfe4..3d3fa0e600af 100644
 --- a/net/core/sysctl_net_core.c
 +++ b/net/core/sysctl_net_core.c
-@@ -22,12 +22,12 @@
+@@ -22,13 +22,13 @@
  #include <net/busy_poll.h>
  #include <net/pkt_sched.h>
  
--static int two __maybe_unused = 2;
+-static int two = 2;
+-static int three = 3;
 -static int min_sndbuf = SOCK_MIN_SNDBUF;
 -static int min_rcvbuf = SOCK_MIN_RCVBUF;
 -static int max_skb_frags = MAX_SKB_FRAGS;
 -static long long_one __maybe_unused = 1;
 -static long long_max __maybe_unused = LONG_MAX;
 +static int two __maybe_unused __read_only = 2;
++static int three __maybe_unused __read_only = 3;
 +static int min_sndbuf __read_only = SOCK_MIN_SNDBUF;
 +static int min_rcvbuf __read_only = SOCK_MIN_RCVBUF;
 +static int max_skb_frags __read_only = MAX_SKB_FRAGS;
@@ -119,7 +99,7 @@ index 9f9e00ba3ad7..9b14e4dfe8ff 100644
  static int net_msg_warn;	/* Unused, but still a sysctl */
  
 diff --git a/net/decnet/sysctl_net_decnet.c b/net/decnet/sysctl_net_decnet.c
-index 55bf64a22b59..be750fd68c67 100644
+index 67b5ab2657b7..8334c7c07736 100644
 --- a/net/decnet/sysctl_net_decnet.c
 +++ b/net/decnet/sysctl_net_decnet.c
 @@ -45,14 +45,14 @@ int sysctl_decnet_rmem[3] = { 4 * 1024, 87380, 87380 * 2 };
@@ -146,7 +126,7 @@ index 55bf64a22b59..be750fd68c67 100644
  
  static struct ctl_table_header *dn_table_header = NULL;
 diff --git a/net/ipv4/sysctl_net_ipv4.c b/net/ipv4/sysctl_net_ipv4.c
-index 587dbfdbcf1a..a30a4fc0acbe 100644
+index 791329c77dea..af0c8df7ea1d 100644
 --- a/net/ipv4/sysctl_net_ipv4.c
 +++ b/net/ipv4/sysctl_net_ipv4.c
 @@ -28,28 +28,28 @@
@@ -201,13 +181,12 @@ index 587dbfdbcf1a..a30a4fc0acbe 100644
  /* obsolete */
  static int sysctl_tcp_low_latency __read_mostly;
 diff --git a/net/ipv6/sysctl_net_ipv6.c b/net/ipv6/sysctl_net_ipv6.c
-index 63b657aa8d29..ec46f90b8a5e 100644
+index 5b60a4bdd36a..7011d23512ec 100644
 --- a/net/ipv6/sysctl_net_ipv6.c
 +++ b/net/ipv6/sysctl_net_ipv6.c
 @@ -22,9 +22,9 @@
- #include <net/calipso.h>
  #endif
-
+ 
  static int two = 2;
 -static int flowlabel_reflect_max = 0x7;
 -static int auto_flowlabels_min;
@@ -217,7 +196,7 @@ index 63b657aa8d29..ec46f90b8a5e 100644
 +static int auto_flowlabels_max __read_only = IP6_AUTO_FLOW_LABEL_MAX;
  
  static int proc_rt6_multipath_hash_policy(struct ctl_table *table, int write,
- 					  void __user *buffer, size_t *lenp,
+ 					  void *buffer, size_t *lenp, loff_t *ppos)
 diff --git a/net/netrom/sysctl_net_netrom.c b/net/netrom/sysctl_net_netrom.c
 index 79fb2d3f477b..4f86d6195352 100644
 --- a/net/netrom/sysctl_net_netrom.c
@@ -262,7 +241,7 @@ index 79fb2d3f477b..4f86d6195352 100644
  static struct ctl_table_header *nr_table_header;
  
 diff --git a/net/phonet/sysctl.c b/net/phonet/sysctl.c
-index 251e750fd9aa..7f36e9044d4b 100644
+index 0d0bf41381c2..53fbf47fef28 100644
 --- a/net/phonet/sysctl.c
 +++ b/net/phonet/sysctl.c
 @@ -22,8 +22,8 @@
@@ -306,7 +285,7 @@ index d391d7758f52..5146992137bb 100644
  static struct ctl_table_header *rose_table_header;
  
 diff --git a/net/rxrpc/sysctl.c b/net/rxrpc/sysctl.c
-index 2bbb38161851..983ba65d13cd 100644
+index 540351d6a5f4..ad3d68452186 100644
 --- a/net/rxrpc/sysctl.c
 +++ b/net/rxrpc/sysctl.c
 @@ -11,12 +11,12 @@
@@ -329,10 +308,10 @@ index 2bbb38161851..983ba65d13cd 100644
  /*
   * RxRPC operating parameters.
 diff --git a/net/sctp/sysctl.c b/net/sctp/sysctl.c
-index 4740aa70e652..ad5ec748b460 100644
+index c16c80963e55..d96c80b57a07 100644
 --- a/net/sctp/sysctl.c
 +++ b/net/sctp/sysctl.c
-@@ -25,18 +25,18 @@
+@@ -25,20 +25,21 @@
  #include <net/sctp/sctp.h>
  #include <linux/sysctl.h>
  
@@ -345,6 +324,8 @@ index 4740aa70e652..ad5ec748b460 100644
 -static int rto_beta_min = 0;
 -static int rto_alpha_max = 1000;
 -static int rto_beta_max = 1000;
+-static int pf_expose_max = SCTP_PF_EXPOSE_MAX;
+-static int ps_retrans_max = SCTP_PS_RETRANS_MAX;
 -
 -static unsigned long max_autoclose_min = 0;
 -static unsigned long max_autoclose_max =
@@ -357,6 +338,9 @@ index 4740aa70e652..ad5ec748b460 100644
 +static int rto_beta_min __read_only = 0;
 +static int rto_alpha_max __read_only = 1000;
 +static int rto_beta_max __read_only = 1000;
++
++static int pf_expose_max __read_only = SCTP_PF_EXPOSE_MAX;
++static int ps_retrans_max __read_only = SCTP_PS_RETRANS_MAX;
 +
 +static unsigned long max_autoclose_min __read_only = 0;
 +static unsigned long max_autoclose_max __read_only =
