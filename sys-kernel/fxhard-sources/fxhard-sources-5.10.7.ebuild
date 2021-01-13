@@ -27,6 +27,7 @@ PATCHES=(
 	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-deny-access-to-overly-permissive-IPC-objects.patch"
 	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-make-more-sysctl-constants-read-only.patch.patch"
 	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-sysfs-restrict.patch"
+	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-modharden.patch"
 )
 
 src_prepare() {

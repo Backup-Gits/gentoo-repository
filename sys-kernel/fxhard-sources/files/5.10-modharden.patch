@@ -1,0 +1,144 @@
+diff -Nru linux-5.10.7-fxhard/Documentation/admin-guide/kernel-parameters.txt linux-5.10.7-fxhard.patched/Documentation/admin-guide/kernel-parameters.txt
+--- linux-5.10.7-fxhard/Documentation/admin-guide/kernel-parameters.txt	2021-01-13 13:24:08.680098394 +0100
++++ linux-5.10.7-fxhard.patched/Documentation/admin-guide/kernel-parameters.txt	2021-01-13 13:32:17.586264372 +0100
+@@ -2879,6 +2879,10 @@
+ 			log everything. Information is printed at KERN_DEBUG
+ 			so loglevel=8 may also need to be specified.
+ 
++	modharden=	[SECURITY]
++			on - Restrict module auto-loading to CAP_SYS_MODULE
++			off - Don't restrict module auto-loading
++
+ 	module.sig_enforce
+ 			[KNL] When CONFIG_MODULE_SIG is set, this means that
+ 			modules without (valid) signatures will fail to load.
+diff -Nru linux-5.10.7-fxhard/Documentation/admin-guide/sysctl/kernel.rst linux-5.10.7-fxhard.patched/Documentation/admin-guide/sysctl/kernel.rst
+--- linux-5.10.7-fxhard/Documentation/admin-guide/sysctl/kernel.rst	2021-01-13 13:24:09.252096248 +0100
++++ linux-5.10.7-fxhard.patched/Documentation/admin-guide/sysctl/kernel.rst	2021-01-13 13:32:04.838312188 +0100
+@@ -533,8 +533,22 @@
+ except that the empty string is still accepted to completely disable
+ module autoloading as described above.
+ 
+-modules_disabled
+-================
++modharden:
++==========
++
++This toggle indicates whether unprivileged users are allowed to
++auto-load kernel modules.
++
++When modharden is set to (0) there are no restrictions. When
++modharden is set to (1), only users with ``CAP_SYS_MODULE`` are
++permitted to load kernel modules
++
++The kernel config option ``CONFIG_SECURITY_MODHARDEN`` sets the
++default value of modharden.
++
++
++modules_disabled:
++=================
+ 
+ A toggle value indicating if modules are allowed to be loaded
+ in an otherwise modular kernel.  This toggle defaults to off
+diff -Nru linux-5.10.7-fxhard/include/linux/kmod.h linux-5.10.7-fxhard.patched/include/linux/kmod.h
+--- linux-5.10.7-fxhard/include/linux/kmod.h	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/include/linux/kmod.h	2021-01-13 13:31:41.294400498 +0100
+@@ -22,6 +22,7 @@
+  * usually useless though. */
+ extern __printf(2, 3)
+ int __request_module(bool wait, const char *name, ...);
++extern int modharden;
+ #define request_module(mod...) __request_module(true, mod)
+ #define request_module_nowait(mod...) __request_module(false, mod)
+ #define try_then_request_module(x, mod...) \
+diff -Nru linux-5.10.7-fxhard/kernel/kmod.c linux-5.10.7-fxhard.patched/kernel/kmod.c
+--- linux-5.10.7-fxhard/kernel/kmod.c	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/kernel/kmod.c	2021-01-13 13:32:11.018289008 +0100
+@@ -105,6 +105,24 @@
+ 	return -ENOMEM;
+ }
+ 
++int modharden __read_mostly = IS_ENABLED(CONFIG_SECURITY_MODHARDEN);
++
++static int __init enable_modharden(char *level)
++{
++	if (!level)
++		return -EINVAL;
++
++	if (strcmp(level, "on") == 0)
++		modharden = 1;
++	else if (strcmp(level, "off") == 0)
++		modharden = 0;
++	else
++		return -EINVAL;
++
++	return 0;
++}
++early_param("modharden", enable_modharden);
++
+ /**
+  * __request_module - try to load a kernel module
+  * @wait: wait (or not) for the operation to complete
+@@ -148,6 +166,11 @@
+ 	if (ret)
+ 		return ret;
+ 
++	if (modharden && !capable(CAP_SYS_MODULE)) {
++		printk(KERN_ALERT "denied attempt to auto-load module %s\n", module_name);
++		return -EPERM;
++	}
++
+ 	if (atomic_dec_if_positive(&kmod_concurrent_max) < 0) {
+ 		pr_warn_ratelimited("request_module: kmod_concurrent_max (%u) close to 0 (max_modprobes: %u), for module %s, throttling...",
+ 				    atomic_read(&kmod_concurrent_max),
+diff -Nru linux-5.10.7-fxhard/kernel/sysctl.c linux-5.10.7-fxhard.patched/kernel/sysctl.c
+--- linux-5.10.7-fxhard/kernel/sysctl.c	2021-01-13 13:24:09.616094882 +0100
++++ linux-5.10.7-fxhard.patched/kernel/sysctl.c	2021-01-13 13:31:41.298400483 +0100
+@@ -2114,6 +2114,15 @@
+ 		.extra1		= SYSCTL_ONE,
+ 		.extra2		= SYSCTL_ONE,
+ 	},
++	{
++		.procname	= "modharden",
++		.data		= &modharden,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= SYSCTL_ZERO,
++		.extra2		= SYSCTL_ONE,
++	},
+ #endif
+ #ifdef CONFIG_UEVENT_HELPER
+ 	{
+diff -Nru linux-5.10.7-fxhard/security/Kconfig linux-5.10.7-fxhard.patched/security/Kconfig
+--- linux-5.10.7-fxhard/security/Kconfig	2021-01-13 13:24:09.616094882 +0100
++++ linux-5.10.7-fxhard.patched/security/Kconfig	2021-01-13 13:31:49.754368766 +0100
+@@ -90,6 +90,28 @@
+ 
+ 	  If unsure say N.
+ 
++config SECURITY_MODHARDEN
++	bool "Harden module auto-loading"
++	default n
++	depends on MODULES
++	help
++	  If you say Y here, module auto-loading in response to use of some
++	  feature implemented by an unloaded module will be restricted to
++	  CAP_SYS_MODULE. Enabling this option helps defend against attacks
++	  by unprivileged users who abuse the auto-loading behavior to
++	  cause a vulnerable module to load that is then exploited.
++
++	  If this option prevents a legitimate use of auto-loading for a
++	  non-root user, the administrator can execute modprobe manually
++	  with the exact name of the module mentioned in the alert log.
++	  Alternatively, the administrator can add the module to the list
++	  of modules loaded at boot by modifying init scripts.
++
++	  This setting can be overridden at runtime via the
++	  kernel.modharden sysctl.
++
++	  If unsure say N.
++
+ config SECURITY
+ 	bool "Enable different security models"
+ 	depends on SYSFS
