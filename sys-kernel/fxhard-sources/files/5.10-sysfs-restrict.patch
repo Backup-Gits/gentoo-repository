@@ -1,0 +1,174 @@
+diff -Nru linux-5.10.7-fxhard/Documentation/admin-guide/sysctl/fs.rst linux-5.10.7-fxhard.patched/Documentation/admin-guide/sysctl/fs.rst
+--- linux-5.10.7-fxhard/Documentation/admin-guide/sysctl/fs.rst	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/Documentation/admin-guide/sysctl/fs.rst	2021-01-13 12:38:46.838263270 +0100
+@@ -48,6 +48,7 @@
+ - suid_dumpable
+ - super-max
+ - super-nr
++- sysfs_restrict
+ 
+ 
+ aio-nr & aio-max-nr
+@@ -272,6 +273,31 @@
+ This protection is based on the restrictions in Openwall and grsecurity.
+ 
+ 
++sysfs_restrict
++--------------
++
++This toggle controls the permissions of sysfs (the pseudo-filesystem
++mounted at /sys).
++
++When sysfs_restrict is set to (0), there are no restrictions and
++unprivileged users are permitted to access sysfs. When sysfs_restrict
++is set to (1), sysfs and any filesystem normally mounted under
++it (e.g. debugfs) will be accessible only by root.
++
++These filesystems generally provide access to hardware and debug information
++that isn't appropriate for unprivileged users of the system. Sysfs and
++debugfs have also become a large source of new vulnerabilities, ranging
++from infoleaks to local compromise. There has been very little oversight with
++an eye toward security involved in adding new exporters of information to these
++filesystems, so their use is discouraged.
++
++This is disabled by default as many programs (e.g. Xorg or debugging tools)
++require access to sysfs/debugfs.
++
++The kernel config option CONFIG_SECURITY_SYSFS_RESTRICT sets the default value
++of sysfs_restrict.
++
++
+ suid_dumpable:
+ --------------
+ 
+diff -Nru linux-5.10.7-fxhard/fs/debugfs/inode.c linux-5.10.7-fxhard.patched/fs/debugfs/inode.c
+--- linux-5.10.7-fxhard/fs/debugfs/inode.c	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/fs/debugfs/inode.c	2021-01-13 12:41:59.433541277 +0100
+@@ -27,6 +27,7 @@
+ #include <linux/magic.h>
+ #include <linux/slab.h>
+ #include <linux/security.h>
++#include <linux/sysfs.h>
+ 
+ #include "internal.h"
+ 
+@@ -565,7 +566,10 @@
+ 		return failed_creating(dentry);
+ 	}
+ 
+-	inode->i_mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
++	inode->i_mode = S_IRWXU;
++	if (!sysfs_restrict)
++		inode->i_mode = S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO;
++
+ 	inode->i_op = &debugfs_dir_inode_operations;
+ 	inode->i_fop = &simple_dir_operations;
+ 
+diff -Nru linux-5.10.7-fxhard/fs/sysfs/dir.c linux-5.10.7-fxhard.patched/fs/sysfs/dir.c
+--- linux-5.10.7-fxhard/fs/sysfs/dir.c	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/fs/sysfs/dir.c	2021-01-13 12:39:19.238141808 +0100
+@@ -32,6 +32,8 @@
+ 	kfree(buf);
+ }
+ 
++int sysfs_restrict = IS_ENABLED(CONFIG_SECURITY_SYSFS_RESTRICT);
++
+ /**
+  * sysfs_create_dir_ns - create a directory for an object with a namespace tag
+  * @kobj: object we're creating directory for
+@@ -40,6 +42,7 @@
+ int sysfs_create_dir_ns(struct kobject *kobj, const void *ns)
+ {
+ 	struct kernfs_node *parent, *kn;
++	umode_t *mode = S_IRWXU;
+ 	kuid_t uid;
+ 	kgid_t gid;
+ 
+@@ -56,8 +59,11 @@
+ 
+ 	kobject_get_ownership(kobj, &uid, &gid);
+ 
++	if (!sysfs_restrict)
++		mode = S_IRWXU | S_IRUGO | S_IXUGO;
++
+ 	kn = kernfs_create_dir_ns(parent, kobject_name(kobj),
+-				  S_IRWXU | S_IRUGO | S_IXUGO, uid, gid,
++				  mode, uid, gid,
+ 				  kobj, ns);
+ 	if (IS_ERR(kn)) {
+ 		if (PTR_ERR(kn) == -EEXIST)
+diff -Nru linux-5.10.7-fxhard/include/linux/sysfs.h linux-5.10.7-fxhard.patched/include/linux/sysfs.h
+--- linux-5.10.7-fxhard/include/linux/sysfs.h	2020-12-13 23:41:30.000000000 +0100
++++ linux-5.10.7-fxhard.patched/include/linux/sysfs.h	2021-01-13 12:32:28.107683157 +0100
+@@ -313,6 +313,8 @@
+ 
+ int __must_check sysfs_init(void);
+ 
++extern int sysfs_restrict;
++
+ static inline void sysfs_enable_ns(struct kernfs_node *kn)
+ {
+ 	return kernfs_enable_ns(kn);
+diff -Nru linux-5.10.7-fxhard/kernel/sysctl.c linux-5.10.7-fxhard.patched/kernel/sysctl.c
+--- linux-5.10.7-fxhard/kernel/sysctl.c	2021-01-13 12:03:13.718247582 +0100
++++ linux-5.10.7-fxhard.patched/kernel/sysctl.c	2021-01-13 12:42:07.837509775 +0100
+@@ -111,6 +111,8 @@
+ #include <linux/tty.h>
+ #endif
+ 
++#include <linux/sysfs.h>
++
+ #if defined(CONFIG_SYSCTL)
+ 
+ /* Constants used for minimum and  maximum */
+@@ -3372,6 +3374,17 @@
+ 		.extra1		= SYSCTL_ZERO,
+ 		.extra2		= &two,
+ 	},
++#ifdef CONFIG_SYSFS
++	{
++		.procname	= "sysfs_restrict",
++		.data		= &sysfs_restrict,
++		.maxlen		= sizeof(int),
++		.mode		= 0600,
++		.proc_handler	= proc_dointvec_minmax_sysadmin,
++		.extra1		= SYSCTL_ZERO,
++		.extra2		= SYSCTL_ONE,
++	},
++#endif
+ #if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
+ 	{
+ 		.procname	= "binfmt_misc",
+diff -Nru linux-5.10.7-fxhard/security/Kconfig linux-5.10.7-fxhard.patched/security/Kconfig
+--- linux-5.10.7-fxhard/security/Kconfig	2021-01-13 12:03:13.718247582 +0100
++++ linux-5.10.7-fxhard.patched/security/Kconfig	2021-01-13 12:36:55.482680732 +0100
+@@ -67,6 +67,29 @@
+ 	  who found hundreds of such insecure usages. Processes with
+ 	  CAP_IPC_OWNER are still permitted to access these IPC objects.
+ 
++config SECURITY_SYSFS_RESTRICT
++	bool "Sysfs/debugfs restriction"
++	default n
++	depends on SYSFS
++	help
++	  If you say Y here, sysfs (the pseudo-filesystem mounted at /sys) and
++	  any filesystem normally mounted under it (e.g. debugfs) will be
++	  accessible only by root. These filesystems generally provide access
++	  to hardware and debug information that isn't appropriate for unprivileged
++	  users of the system. Sysfs and debugfs have also become a large source
++	  of new vulnerabilities, ranging from infoleaks to local compromise.
++	  There has been very little oversight with an eye toward security involved
++	  in adding new exporters of information to these filesystems, so their
++	  use is discouraged.
++
++	  This is disabled by default as many programs (e.g. Xorg or debugging tools)
++	  require access to sysfs/debugfs.
++
++	  This setting can be overridden at runtime via the
++	  fs.sysfs_restrict sysctl.
++
++	  If unsure say N.
++
+ config SECURITY
+ 	bool "Enable different security models"
+ 	depends on SYSFS

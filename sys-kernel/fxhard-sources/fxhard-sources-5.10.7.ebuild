@@ -26,6 +26,7 @@ PATCHES=(
 	"${DISTDIR}/linux-hardened-${KV_MAJOR}.${KV_MINOR}.${KV_PATCH}.a.patch"
 	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-deny-access-to-overly-permissive-IPC-objects.patch"
 	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-make-more-sysctl-constants-read-only.patch.patch"
+	"${FILESDIR}/${KV_MAJOR}.${KV_MINOR}-sysfs-restrict.patch"
 )
 
 src_prepare() {
