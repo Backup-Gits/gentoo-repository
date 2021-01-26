@@ -2,9 +2,10 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="7"
+LUA_COMPAT=( lua5-4 luajit )
 
 [[ ${PV} == *9999 ]] && SCM="git-r3"
-inherit toolchain-funcs flag-o-matic systemd linux-info $SCM
+inherit toolchain-funcs flag-o-matic systemd linux-info lua-single $SCM
 
 MY_P="${PN}-${PV/_beta/-dev}"
 
@@ -43,11 +44,15 @@ DEPEND="
 	)
 	slz? ( dev-libs/libslz:= )
 	zlib? ( sys-libs/zlib )
-	lua? ( dev-lang/lua:5.3 )
+	lua? ( ${LUA_DEPS}
+		$(lua_gen_impl_dep 'deprecated' lua5-1)
+	)
 	device-atlas? ( dev-libs/device-atlas-api-c )"
 RDEPEND="${DEPEND}
 	acct-group/haproxy
 	acct-user/haproxy"
+
+BDEPEND="lua? ( ${LUA_DEPS} )"
 
 S="${WORKDIR}/${MY_P}"
 
@@ -75,6 +80,7 @@ pkg_setup() {
 		CONFIG_CHECK="~NET_NS"
 		linux-info_pkg_setup
 	fi
+	use lua && lua-single_pkg_setup
 }
 
 src_compile() {
@@ -85,6 +91,8 @@ src_compile() {
 		USE_TFO=1
 		USE_LINUX_SPLICE=1
 		USE_REGPARM=1
+		LUA_INC=/usr/include/lua5.4
+		LUA_LIB_NAME=lua5.4
 	)
 
 	# TODO: PCRE2_WIDTH?
