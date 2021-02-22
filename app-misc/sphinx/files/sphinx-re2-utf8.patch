@@ -1,0 +1,11 @@
+--- sphinx-2.2.11-release/src/sphinx.cpp	2016-07-19 12:42:18.000000000 +0200
++++ sphinx-2.2.11-release.patched/src/sphinx.cpp	2021-02-22 15:57:09.731831627 +0100
+@@ -25836,7 +25836,7 @@
+ 	tRegExp.m_sTo.Trim();
+ 
+ 	RE2::Options tOptions;
+-	tOptions.set_utf8 ( true );
++	//tOptions.set_utf8 ( true );
+ 	tRegExp.m_pRE2 = new RE2 ( tRegExp.m_sFrom.cstr(), tOptions );
+ 
+ 	std::string sRE2Error;

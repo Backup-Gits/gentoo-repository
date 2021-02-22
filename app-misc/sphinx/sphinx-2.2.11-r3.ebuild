@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -16,13 +16,14 @@ SRC_URI="http://sphinxsearch.com/files/${MY_P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
+KEYWORDS="~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~s390 ~sparc ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~sparc-solaris ~sparc64-solaris"
 IUSE="debug +id64 mariadb mysql odbc postgres re2 stemmer syslog xml"
 
 REQUIRED_USE="mysql? ( !mariadb ) mariadb? ( !mysql )"
 
 RDEPEND="
-	mysql? ( virtual/mysql )
-	mariadb? ( virtual/mysql )
+	mysql? ( dev-db/mysql-connector-c )
+	mariadb? ( dev-db/mariadb-connector-c )
 	postgres? ( dev-db/postgresql:* )
 	odbc? ( dev-db/unixODBC )
 	re2? ( dev-libs/re2 )
@@ -34,6 +35,7 @@ S=${WORKDIR}/${MY_P}
 
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.0.1_beta-darwin8.patch
+	epatch "${FILESDIR}"/${PN}-re2-utf8.patch
 
 	# drop nasty hardcoded search path breaking Prefix
 	# We patch configure directly since otherwise we need to run
@@ -77,6 +79,7 @@ src_configure() {
 		$(use_with odbc unixodbc) \
 		$(use_with postgres pgsql) \
 		$(use_with re2) \
+		--with-re2-libs="${EPREFIX}/usr/$(get_libdir)/libre2.so" \
 		$(use_with stemmer libstemmer) \
 		$(use_with syslog syslog) \
 		$(use_with xml libexpat )
@@ -86,9 +89,9 @@ src_configure() {
 }
 
 src_compile() {
-	emake AR="$(tc-getAR)" || die "emake failed"
+	emake AR="$(tc-getAR)"
 
-	emake -j 1 -C api/libsphinxclient || die "emake libsphinxclient failed"
+	emake -j 1 -C api/libsphinxclient
 }
 
 src_test() {
@@ -98,8 +101,8 @@ src_test() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install || die "install failed"
-	emake DESTDIR="${D}" -C api/libsphinxclient install || die "install libsphinxclient failed"
+	emake DESTDIR="${D}" install
+	emake DESTDIR="${D}" -C api/libsphinxclient install
 
 	dodoc doc/*
 
