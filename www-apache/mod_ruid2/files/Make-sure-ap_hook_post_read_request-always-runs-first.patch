@@ -1,0 +1,22 @@
+From 193fdda7528a896916df89ecbb199ed05506a34c Mon Sep 17 00:00:00 2001
+From: ju5t <me@ju5t.nl>
+Date: Sun, 2 Nov 2014 12:51:01 +0100
+Subject: [PATCH] Make sure ap_hook_post_read_request always runs first
+
+---
+ mod_ruid2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mod_ruid2.c b/mod_ruid2.c
+index 30d81b2..3e2afb0 100644
+--- a/mod_ruid2.c
++++ b/mod_ruid2.c
+@@ -679,7 +679,7 @@ static void register_hooks (apr_pool_t *p)
+ 
+ 	ap_hook_post_config (ruid_init, NULL, NULL, APR_HOOK_MIDDLE);
+ 	ap_hook_child_init (ruid_child_init, NULL, NULL, APR_HOOK_MIDDLE);
+-	ap_hook_post_read_request(ruid_setup, NULL, NULL, APR_HOOK_MIDDLE);
++	ap_hook_post_read_request(ruid_setup, NULL, NULL, APR_HOOK_REALLY_FIRST);
+ 	ap_hook_header_parser(ruid_uiiii, NULL, NULL, APR_HOOK_FIRST);
+ }
+ 
