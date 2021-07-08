@@ -16,6 +16,7 @@ SRC_URI="https://github.com/jvoisin/snuffleupagus/archive/refs/tags/v${PV}.tar.g
 LICENSE="GPL-COMPATIBLE"
 SLOT="0"
 IUSE=""
+KEYWORDS="~amd64 ~x86"
 
 PHP_EXT_S="${WORKDIR}/${P}/src"
 
