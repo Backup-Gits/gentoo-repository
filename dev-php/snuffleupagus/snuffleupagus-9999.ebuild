@@ -6,25 +6,23 @@ PHP_EXT_NAME="snuffleupagus"
 PHP_EXT_INI="yes"
 PHP_EXT_ZENDEXT="no"
 
-USE_PHP="php7-2 php7-4"
+USE_PHP="php7-2 php7-4 php8-0"
 
 inherit php-ext-pecl-r3
+if [[ ${PV} == "9999" ]]; then
+    SRC_URI=""
+    EGIT_REPO_URI="https://github.com/jvoisin/snuffleupagus.git"
+    EGIT_CHECKOUT_DIR="${PHP_EXT_S}"
+    inherit git-r3
+fi
 
 DESCRIPTION="snuffleupagus is an advanced protection system for PHP installations"
 HOMEPAGE="https://snuffleupagus.readthedocs.io"
-SRC_URI="https://github.com/jvoisin/snuffleupagus/archive/refs/tags/v${PV}.tar.gz"
 LICENSE="GPL-COMPATIBLE"
 SLOT="0"
 IUSE=""
-KEYWORDS="~amd64 ~x86"
 
 PHP_EXT_S="${WORKDIR}/${P}/src"
-
-src_prepare() {
-	eapply -p1 "${FILESDIR}/001-fix-368-build-with-system-libpcre.patch"
-	eapply_user
-	php-ext-source-r3_src_prepare
-}
 
 src_configure() {
 	local PHP_EXT_ECONF_ARGS=(
