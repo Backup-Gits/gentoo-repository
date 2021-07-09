@@ -6,7 +6,7 @@ PHP_EXT_NAME="snuffleupagus"
 PHP_EXT_INI="yes"
 PHP_EXT_ZENDEXT="no"
 
-USE_PHP="php7-2 php7-4 php8-0"
+USE_PHP="php7-2 php7-4"
 
 inherit php-ext-pecl-r3
 
@@ -20,6 +20,12 @@ KEYWORDS="~amd64 ~x86"
 
 PHP_EXT_S="${WORKDIR}/${P}/src"
 
+src_prepare() {
+	eapply -p1 "${FILESDIR}/001-fix-368-build-with-system-libpcre.patch"
+	eapply_user
+	php-ext-source-r3_src_prepare
+}
+
 src_configure() {
 	local PHP_EXT_ECONF_ARGS=(
 		--enable-snuffleupagus
@@ -30,9 +36,9 @@ src_configure() {
 
 src_install() {
 	php-ext-source-r3_src_install
-	php-ext-source-r3_addtoinifiles "sp.configuration_file" "/etc/php/conf.d/default.rules"
-	php-ext-source-r3_addtoinifiles ";sp.configuration_file" "/etc/php/conf.d/typo3.rules"
-	php-ext-source-r3_addtoinifiles ";sp.configuration_file" "/etc/php/conf.d/rips.rules"
+	php-ext-source-r3_addtoinifiles "sp.configuration_file" "/etc/php/snuffleupagus/default.rules"
+	php-ext-source-r3_addtoinifiles ";sp.configuration_file" "/etc/php/snuffleupagus/typo3.rules"
+	php-ext-source-r3_addtoinifiles ";sp.configuration_file" "/etc/php/snuffleupagus/rips.rules"
 
 	local dirs=(
 			/etc/php/snuffleupagus

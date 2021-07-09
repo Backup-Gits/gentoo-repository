@@ -1,0 +1,46 @@
+From 48f927e9694fcfd76d9fe97542359c8b0bd0a46d Mon Sep 17 00:00:00 2001
+From: Remi Collet <remi@remirepo.net>
+Date: Mon, 4 Jan 2021 19:32:08 +0100
+Subject: [PATCH] Fix #368 build with system libpcre
+
+---
+ src/sp_pcre_compat.c | 4 ++--
+ src/sp_pcre_compat.h | 3 ---
+ 2 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/src/sp_pcre_compat.c b/src/sp_pcre_compat.c
+index b4d29f06..283eeb7f 100644
+--- a/src/sp_pcre_compat.c
++++ b/src/sp_pcre_compat.c
+@@ -15,7 +15,7 @@ sp_pcre* sp_pcre_compile(const char* const pattern) {
+   const char* pcre_error = NULL;
+   int erroroffset;
+   ret =
+-      php_pcre_compile(pattern, PCRE_CASELESS, &pcre_error, &erroroffset, NULL);
++      pcre_compile(pattern, PCRE_CASELESS, &pcre_error, &erroroffset, NULL);
+ #endif
+ 
+   if (NULL == ret) {
+@@ -38,7 +38,7 @@ bool ZEND_HOT sp_is_regexp_matching_len(const sp_pcre* regexp, const char* str,
+   ret = pcre2_match(regexp, (PCRE2_SPTR)str, len, 0, 0, match_data, NULL);
+ #else
+   int vec[30];
+-  ret = php_pcre_exec(regexp, NULL, str, len, 0, 0, vec,
++  ret = pcre_exec(regexp, NULL, str, len, 0, 0, vec,
+                       sizeof(vec) / sizeof(int));
+ #endif
+ 
+diff --git a/src/sp_pcre_compat.h b/src/sp_pcre_compat.h
+index 11f7f7ca..14c33b2d 100644
+--- a/src/sp_pcre_compat.h
++++ b/src/sp_pcre_compat.h
+@@ -4,9 +4,6 @@
+ #include <stdlib.h>
+ #include <stdbool.h>
+ 
+-#undef pcre_exec
+-#undef pcre_compile
+-
+ #define PCRE2_CODE_UNIT_WIDTH 8
+ #if PHP_VERSION_ID >= 70300
+ #define SP_HAS_PCRE2
